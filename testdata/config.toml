@@ -1,0 +1,42 @@
+[apiserver]
+bind = "0.0.0.0"
+port = 9998
+
+    # API server TLS config
+    [apiserver.tls]
+    crt = "/tmp/bla.pem"
+    key = "/tmp/bla-key.pem"
+    cacert = "/tmp/bla-ca.pem"
+
+[syslog]
+# Possible values: unixgram, tcp, udp
+listener = "unixgram"
+
+# possible values:
+#   for unixgram: /path/to/socket
+#   for tcp/udp IP:port pair: 0.0.0.0:5144 
+address = "/run/coriolis-logger/syslog"
+
+# Log format
+# possible values:
+#   rfc3164
+#   rfc5424
+#   rfc6587
+#   automatic
+format = "automatic"
+
+# storage backend for logs. Available options are:
+#   * influxdb
+#   * stdout
+datastore = "influxdb"
+
+    [syslog.influxdb]
+    url = "https://127.0.0.1:8086"
+    username = "coriolis"
+    password = "Passw0rd"
+    # Verify server enables mutual TLS authentication
+    verify_server = false
+    # Client TLS certificates
+    cacert = "/tmp/ca.pem"
+    client_crt = "/tmp/client-crt.pem"
+    client_key = "/tmp/client-key.pem"
