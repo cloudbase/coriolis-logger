@@ -31,6 +31,9 @@ const (
 
 	InfluxDBDatastore DatastoreType = "influxdb"
 	StdOutDataStore   DatastoreType = "stdout"
+
+	DefaultConfigDir  = "/etc/coriolis-logger"
+	DefaultConfigFile = "/etc/coriolis-logger/coriolis-logger.toml"
 )
 
 // NewConfig returns a new Config
@@ -94,12 +97,15 @@ func (t *TLSConfig) Validate() error {
 type APIServer struct {
 	Bind      string
 	Port      int
+	UseTLS    bool
 	TLSConfig TLSConfig `toml:"tls"`
 }
 
 func (a *APIServer) Validate() error {
-	if err := a.TLSConfig.Validate(); err != nil {
-		return errors.Wrap(err, "TLS validation failed")
+	if a.UseTLS {
+		if err := a.TLSConfig.Validate(); err != nil {
+			return errors.Wrap(err, "TLS validation failed")
+		}
 	}
 	if a.Port > 65535 || a.Port < 1 {
 		return fmt.Errorf("invalid port nr %q", a.Port)

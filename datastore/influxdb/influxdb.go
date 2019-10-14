@@ -8,7 +8,9 @@ import (
 )
 
 func NewInfluxDBDatastore(cfg *config.InfluxDB) (datastore.DataStore, error) {
-	return nil, nil
+	return &InfluxDBDataStore{
+		cfg: cfg,
+	}, nil
 }
 
 var _ datastore.DataStore = (*InfluxDBDataStore)(nil)

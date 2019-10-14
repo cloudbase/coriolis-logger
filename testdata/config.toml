@@ -1,6 +1,7 @@
 [apiserver]
 bind = "0.0.0.0"
 port = 9998
+use_tls = false
 
     # API server TLS config
     [apiserver.tls]
@@ -15,7 +16,8 @@ listener = "unixgram"
 # possible values:
 #   for unixgram: /path/to/socket
 #   for tcp/udp IP:port pair: 0.0.0.0:5144 
-address = "/run/coriolis-logger/syslog"
+# address = "/tmp/coriolis-logger/syslog"
+address = "/tmp/coriolis-logging.sock"
 
 # Log format
 # possible values:
@@ -28,7 +30,8 @@ format = "automatic"
 # storage backend for logs. Available options are:
 #   * influxdb
 #   * stdout
-datastore = "influxdb"
+#datastore = "influxdb"
+datastore = "stdout"
 
     [syslog.influxdb]
     url = "https://127.0.0.1:8086"

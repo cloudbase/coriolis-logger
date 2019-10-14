@@ -3,6 +3,7 @@ package syslog
 import (
 	"context"
 	"fmt"
+	"os"
 
 	syslog "gopkg.in/mcuadros/go-syslog.v2"
 
@@ -11,8 +12,15 @@ import (
 	"github.com/gabriel-samfira/coriolis-logger/datastore/influxdb"
 	"github.com/gabriel-samfira/coriolis-logger/datastore/stdout"
 	"github.com/gabriel-samfira/coriolis-logger/worker"
+	"github.com/juju/loggo"
 	"github.com/pkg/errors"
 )
+
+var log = loggo.GetLogger("coriolis.logger.syslog")
+
+func init() {
+	log.SetLogLevel(loggo.DEBUG)
+}
 
 func getDatastore(cfg config.Syslog) (datastore.DataStore, error) {
 	if err := cfg.Validate(); err != nil {
@@ -74,6 +82,7 @@ func NewSyslogServer(ctx context.Context, cfg config.Syslog, errChan chan error)
 		channel:   channel,
 		ctx:       ctx,
 		errChan:   errChan,
+		closed:    make(chan struct{}),
 	}, nil
 }
 
@@ -86,6 +95,7 @@ type SyslogWorker struct {
 	channel   syslog.LogPartsChannel
 	ctx       context.Context
 	errChan   chan error
+	closed    chan struct{}
 }
 
 func (s *SyslogWorker) doWork() {
@@ -101,10 +111,11 @@ func (s *SyslogWorker) doWork() {
 				// and allow the process manager or the operator to restart
 				// the syslog server.
 				s.errChan <- err
+				s.Stop()
 				return
 			}
 		case <-s.ctx.Done():
-			close(s.channel)
+			s.Stop()
 			return
 		}
 	}
@@ -120,8 +131,31 @@ func (s *SyslogWorker) Start() error {
 }
 
 func (s *SyslogWorker) Stop() error {
-	if _, ok := <-s.channel; ok {
+	log.Infof("stopping syslog worker")
+	defer close(s.closed)
+	select {
+	case _, ok := <-s.channel:
+		if ok {
+			close(s.channel)
+		}
+	default:
 		close(s.channel)
 	}
-	return s.server.Kill()
+	if err := s.server.Kill(); err != nil {
+		return errors.Wrap(err, "killing syslog server")
+	}
+	if s.cfg.Listener == config.UnixDgramListener {
+		if mode, err := os.Stat(s.cfg.Address); err == nil {
+			if mode.Mode()&os.ModeSocket != 0 {
+				if err := os.Remove(s.cfg.Address); err != nil {
+					return errors.Wrap(err, "removing unix socket")
+				}
+			}
+		}
+	}
+	return nil
+}
+
+func (s *SyslogWorker) Wait() {
+	<-s.closed
 }
