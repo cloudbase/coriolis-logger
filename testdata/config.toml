@@ -30,16 +30,17 @@ format = "automatic"
 # storage backend for logs. Available options are:
 #   * influxdb
 #   * stdout
-#datastore = "influxdb"
-datastore = "stdout"
+datastore = "influxdb"
+# datastore = "stdout"
 
     [syslog.influxdb]
-    url = "https://127.0.0.1:8086"
+    url = "http://127.0.0.1:8086"
     username = "coriolis"
     password = "Passw0rd"
+    database = "coriolis"
     # Verify server enables mutual TLS authentication
     verify_server = false
     # Client TLS certificates
-    cacert = "/tmp/ca.pem"
-    client_crt = "/tmp/client-crt.pem"
-    client_key = "/tmp/client-key.pem"
+    # cacert = "/tmp/ca.pem"
+    # client_crt = "/tmp/client-crt.pem"
+    # client_key = "/tmp/client-key.pem"

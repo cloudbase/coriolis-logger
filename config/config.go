@@ -184,6 +184,10 @@ func (s *Syslog) Validate() error {
 // InfluxURL represents an influxDB URL
 type InfluxURL string
 
+func (i InfluxURL) String() string {
+	return string(i)
+}
+
 func (i InfluxURL) IsValid() bool {
 	url, err := url.Parse(string(i))
 	if err != nil {
@@ -215,15 +219,54 @@ type InfluxDB struct {
 	URL          InfluxURL `toml:"url"`
 	Username     string
 	Password     string
+	Database     string
 	VerifyServer bool
 	CACert       string
 	ClientCRT    string
 	ClientKey    string
 }
 
+func (i *InfluxDB) TLSConfig() (*tls.Config, error) {
+	if i.CACert == "" && i.ClientCRT == "" && i.ClientKey == "" {
+		return nil, nil
+	}
+
+	cfg := &tls.Config{}
+
+	var roots *x509.CertPool
+	if i.CACert != "" {
+		caCertPEM, err := ioutil.ReadFile(i.CACert)
+		if err != nil {
+			return nil, err
+		}
+		roots = x509.NewCertPool()
+		ok := roots.AppendCertsFromPEM(caCertPEM)
+		if !ok {
+			return nil, fmt.Errorf("failed to parse CA cert")
+		}
+		cfg.ClientCAs = roots
+	}
+
+	if i.ClientKey != "" && i.ClientCRT != "" {
+		cert, err := tls.LoadX509KeyPair(i.ClientCRT, i.ClientKey)
+		if err != nil {
+			return nil, err
+		}
+		cfg.Certificates = []tls.Certificate{cert}
+	}
+
+	if i.VerifyServer {
+		cfg.ClientAuth = tls.RequireAndVerifyClientCert
+	}
+	return cfg, nil
+}
+
 func (i *InfluxDB) Validate() error {
 	if i.URL.IsValid() == false {
 		return fmt.Errorf("invalid InfluxDB URL: %q", i.URL)
+	}
+	if i.Database == "" {
+		return fmt.Errorf("invalid database name")
 	}
 	return nil
 }

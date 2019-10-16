@@ -8,6 +8,9 @@ import (
 	"syscall"
 
 	"github.com/gabriel-samfira/coriolis-logger/config"
+	"github.com/gabriel-samfira/coriolis-logger/datastore"
+	"github.com/gabriel-samfira/coriolis-logger/datastore/stdout"
+	"github.com/gabriel-samfira/coriolis-logger/logging"
 	"github.com/gabriel-samfira/coriolis-logger/syslog"
 	"github.com/juju/loggo"
 )
@@ -38,11 +41,24 @@ func main() {
 		os.Exit(1)
 	}
 
+	datastore, err := datastore.GetDatastore(cfg.Syslog)
+	if err != nil {
+		log.Errorf("error getting datastore: %q", err)
+		os.Exit(1)
+	}
+	stdout, err := stdout.NewStdOutDatastore()
+	if err != nil {
+		log.Errorf("error getting stdout datastore: %q", err)
+		os.Exit(1)
+	}
+
+	writer := logging.NewAggregateWriter(datastore, stdout)
+
 	// ctx, cancel := context.WithCancel(context.Background())
 	ctx, cancel := context.WithCancel(context.Background())
 	errChan := make(chan error)
 
-	syslogSvc, err := syslog.NewSyslogServer(ctx, cfg.Syslog, errChan)
+	syslogSvc, err := syslog.NewSyslogServer(ctx, cfg.Syslog, writer, errChan)
 	if err != nil {
 		log.Errorf("error getting syslog worker: %q", err)
 		os.Exit(1)

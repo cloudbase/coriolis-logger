@@ -8,9 +8,7 @@ import (
 	syslog "gopkg.in/mcuadros/go-syslog.v2"
 
 	"github.com/gabriel-samfira/coriolis-logger/config"
-	"github.com/gabriel-samfira/coriolis-logger/datastore"
-	"github.com/gabriel-samfira/coriolis-logger/datastore/influxdb"
-	"github.com/gabriel-samfira/coriolis-logger/datastore/stdout"
+	"github.com/gabriel-samfira/coriolis-logger/logging"
 	"github.com/gabriel-samfira/coriolis-logger/worker"
 	"github.com/juju/loggo"
 	"github.com/pkg/errors"
@@ -22,32 +20,28 @@ func init() {
 	log.SetLogLevel(loggo.DEBUG)
 }
 
-func getDatastore(cfg config.Syslog) (datastore.DataStore, error) {
-	if err := cfg.Validate(); err != nil {
-		return nil, errors.Wrap(err, "validating syslog config")
-	}
-	switch cfg.DataStore {
-	case config.InfluxDBDatastore:
-		// Validation should already be done by the config package, but
-		// it pays to be paranoid sometimes
-		if cfg.InfluxDB == nil {
-			return nil, fmt.Errorf("invalid influxdb datastore config")
-		}
-		return influxdb.NewInfluxDBDatastore(cfg.InfluxDB)
-	case config.StdOutDataStore:
-		return stdout.NewStdOutDatastore()
-	default:
-		return nil, fmt.Errorf("invalid datastore type")
-	}
-}
+// func getDatastore(cfg config.Syslog) (datastore.DataStore, error) {
+// 	if err := cfg.Validate(); err != nil {
+// 		return nil, errors.Wrap(err, "validating syslog config")
+// 	}
+// 	switch cfg.DataStore {
+// 	case config.InfluxDBDatastore:
+// 		// Validation should already be done by the config package, but
+// 		// it pays to be paranoid sometimes
+// 		if cfg.InfluxDB == nil {
+// 			return nil, fmt.Errorf("invalid influxdb datastore config")
+// 		}
+// 		return influxdb.NewInfluxDBDatastore(cfg.InfluxDB)
+// 	case config.StdOutDataStore:
+// 		return stdout.NewStdOutDatastore()
+// 	default:
+// 		return nil, fmt.Errorf("invalid datastore type")
+// 	}
+// }
 
-func NewSyslogServer(ctx context.Context, cfg config.Syslog, errChan chan error) (worker.SimpleWorker, error) {
+func NewSyslogServer(ctx context.Context, cfg config.Syslog, writer logging.Writer, errChan chan error) (worker.SimpleWorker, error) {
 	if err := cfg.Validate(); err != nil {
 		return nil, errors.Wrap(err, "validating syslog config")
-	}
-	store, err := getDatastore(cfg)
-	if err != nil {
-		return nil, errors.Wrap(err, "fetching datastore")
 	}
 
 	channel := make(syslog.LogPartsChannel)
@@ -76,26 +70,26 @@ func NewSyslogServer(ctx context.Context, cfg config.Syslog, errChan chan error)
 	}
 
 	return &SyslogWorker{
-		server:    server,
-		datastore: store,
-		cfg:       cfg,
-		channel:   channel,
-		ctx:       ctx,
-		errChan:   errChan,
-		closed:    make(chan struct{}),
+		server:  server,
+		logging: writer,
+		cfg:     cfg,
+		channel: channel,
+		ctx:     ctx,
+		errChan: errChan,
+		closed:  make(chan struct{}),
 	}, nil
 }
 
 var _ worker.SimpleWorker = (*SyslogWorker)(nil)
 
 type SyslogWorker struct {
-	datastore datastore.DataStore
-	cfg       config.Syslog
-	server    *syslog.Server
-	channel   syslog.LogPartsChannel
-	ctx       context.Context
-	errChan   chan error
-	closed    chan struct{}
+	logging logging.Writer
+	cfg     config.Syslog
+	server  *syslog.Server
+	channel syslog.LogPartsChannel
+	ctx     context.Context
+	errChan chan error
+	closed  chan struct{}
 }
 
 func (s *SyslogWorker) doWork() {
@@ -106,13 +100,19 @@ func (s *SyslogWorker) doWork() {
 				// channel was closed, exiting
 				return
 			}
-			if err := s.datastore.Write(logParts); err != nil {
-				// An error was returned by the datastore. We should exit
-				// and allow the process manager or the operator to restart
-				// the syslog server.
-				s.errChan <- err
-				s.Stop()
-				return
+			logMsg, err := logging.SyslogToLogMessage(logParts)
+			if err != nil {
+				log.Errorf("failed to parse log message: %q", err)
+				continue
+			}
+			if err := s.logging.Write(logMsg); err != nil {
+				log.Errorf("failed to write log message: %q", err)
+				continue
+				// TODO (gsamfira): decide whether we want to stop the server
+				// when an error occurs here.
+				// s.errChan <- err
+				// s.Stop()
+				// return
 			}
 		case <-s.ctx.Done():
 			s.Stop()
