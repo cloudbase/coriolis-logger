@@ -1,4 +1,4 @@
-package apiserver
+package websocket
 
 import "time"
 

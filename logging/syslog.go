@@ -66,6 +66,10 @@ const (
 	RFC3164 RFCVersion = "rfc3164"
 )
 
+const (
+	DefaultSeverityLevel = Informational
+)
+
 type LogMessage struct {
 	Timestamp  time.Time
 	Hostname   string

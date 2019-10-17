@@ -7,9 +7,11 @@ import (
 	"os/signal"
 	"syscall"
 
+	"github.com/gabriel-samfira/coriolis-logger/writers/stdout"
+	"github.com/gabriel-samfira/coriolis-logger/writers/websocket"
+
 	"github.com/gabriel-samfira/coriolis-logger/config"
 	"github.com/gabriel-samfira/coriolis-logger/datastore"
-	"github.com/gabriel-samfira/coriolis-logger/datastore/stdout"
 	"github.com/gabriel-samfira/coriolis-logger/logging"
 	"github.com/gabriel-samfira/coriolis-logger/syslog"
 	"github.com/juju/loggo"
@@ -40,24 +42,28 @@ func main() {
 		log.Errorf("failed to validate config: %q", err)
 		os.Exit(1)
 	}
+	// ctx, cancel := context.WithCancel(context.Background())
+	ctx, cancel := context.WithCancel(context.Background())
+	errChan := make(chan error)
 
 	datastore, err := datastore.GetDatastore(cfg.Syslog)
 	if err != nil {
 		log.Errorf("error getting datastore: %q", err)
 		os.Exit(1)
 	}
-	stdout, err := stdout.NewStdOutDatastore()
+	stdoutWriter, err := stdout.NewStdOutWriter()
 	if err != nil {
 		log.Errorf("error getting stdout datastore: %q", err)
 		os.Exit(1)
 	}
 
-	writer := logging.NewAggregateWriter(datastore, stdout)
+	websocketWorker := websocket.NewHub(ctx)
+	if err := websocketWorker.Start(); err != nil {
+		log.Errorf("error starting websocket worker: %q", err)
+		os.Exit(1)
+	}
 
-	// ctx, cancel := context.WithCancel(context.Background())
-	ctx, cancel := context.WithCancel(context.Background())
-	errChan := make(chan error)
-
+	writer := logging.NewAggregateWriter(datastore, stdoutWriter, websocketWorker)
 	syslogSvc, err := syslog.NewSyslogServer(ctx, cfg.Syslog, writer, errChan)
 	if err != nil {
 		log.Errorf("error getting syslog worker: %q", err)
