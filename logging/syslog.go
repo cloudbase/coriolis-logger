@@ -23,14 +23,15 @@ func (f Facility) String() string {
 type RFCVersion string
 
 const (
-	Emergency Severity = iota
-	Alert
-	Critical
-	Error
-	Warning
-	Notice
-	Informational
-	Debug
+	UnknownSeverity Severity = -1
+	Emergency       Severity = 0
+	Alert           Severity = 1
+	Critical        Severity = 2
+	Error           Severity = 3
+	Warning         Severity = 4
+	Notice          Severity = 5
+	Informational   Severity = 6
+	Debug           Severity = 7
 )
 
 const (

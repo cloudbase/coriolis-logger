@@ -3,6 +3,8 @@ package websocket
 import (
 	"time"
 
+	"github.com/google/uuid"
+
 	"github.com/gabriel-samfira/coriolis-logger/logging"
 	"github.com/gorilla/websocket"
 	"github.com/juju/loggo"
@@ -24,14 +26,20 @@ const (
 	maxMessageSize = 1024
 )
 
-var upgrader = websocket.Upgrader{
-	ReadBufferSize:  1024,
-	WriteBufferSize: 16384,
-}
-
 type ClientFilterOptions struct {
 	Severity   *logging.Severity `json:"omitempty"`
 	BinaryName *string
+}
+
+func NewClient(conn *websocket.Conn, opts ClientFilterOptions, hub *Hub) (*Client, error) {
+	clientID := uuid.New()
+	return &Client{
+		id:      clientID.String(),
+		options: opts,
+		conn:    conn,
+		hub:     hub,
+		send:    make(chan LogMessage, 100),
+	}, nil
 }
 
 type Client struct {
@@ -42,6 +50,11 @@ type Client struct {
 	send chan LogMessage
 
 	hub *Hub
+}
+
+func (c *Client) Go() {
+	go c.clientReader()
+	go c.clientWriter()
 }
 
 // clientReader waits for options changes from the client. The client can at any time

@@ -17,7 +17,7 @@ import (
 	"github.com/juju/loggo"
 )
 
-var log = loggo.GetLogger("coriolis.cmd.logger")
+var log = loggo.GetLogger("coriolis.logger.cmd")
 
 func main() {
 	stop := make(chan os.Signal)

@@ -80,6 +80,11 @@ func (h *Hub) run() {
 	}
 }
 
+func (h *Hub) Register(client *Client) error {
+	h.register <- client
+	return nil
+}
+
 func (h *Hub) Write(msg logging.LogMessage) error {
 	ticker := time.NewTicker(60 * time.Second)
 	defer ticker.Stop()
