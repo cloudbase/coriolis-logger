@@ -20,25 +20,6 @@ func init() {
 	log.SetLogLevel(loggo.DEBUG)
 }
 
-// func getDatastore(cfg config.Syslog) (datastore.DataStore, error) {
-// 	if err := cfg.Validate(); err != nil {
-// 		return nil, errors.Wrap(err, "validating syslog config")
-// 	}
-// 	switch cfg.DataStore {
-// 	case config.InfluxDBDatastore:
-// 		// Validation should already be done by the config package, but
-// 		// it pays to be paranoid sometimes
-// 		if cfg.InfluxDB == nil {
-// 			return nil, fmt.Errorf("invalid influxdb datastore config")
-// 		}
-// 		return influxdb.NewInfluxDBDatastore(cfg.InfluxDB)
-// 	case config.StdOutDataStore:
-// 		return stdout.NewStdOutDatastore()
-// 	default:
-// 		return nil, fmt.Errorf("invalid datastore type")
-// 	}
-// }
-
 func NewSyslogServer(ctx context.Context, cfg config.Syslog, writer logging.Writer, errChan chan error) (worker.SimpleWorker, error) {
 	if err := cfg.Validate(); err != nil {
 		return nil, errors.Wrap(err, "validating syslog config")
@@ -147,6 +128,7 @@ func (s *SyslogWorker) Stop() error {
 	if s.cfg.Listener == config.UnixDgramListener {
 		if mode, err := os.Stat(s.cfg.Address); err == nil {
 			if mode.Mode()&os.ModeSocket != 0 {
+				log.Infof("removing unix socket %q", s.cfg.Address)
 				if err := os.Remove(s.cfg.Address); err != nil {
 					return errors.Wrap(err, "removing unix socket")
 				}

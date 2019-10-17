@@ -7,6 +7,7 @@ import (
 	"os/signal"
 	"syscall"
 
+	"github.com/gabriel-samfira/coriolis-logger/apiserver"
 	"github.com/gabriel-samfira/coriolis-logger/writers/stdout"
 	"github.com/gabriel-samfira/coriolis-logger/writers/websocket"
 
@@ -74,6 +75,17 @@ func main() {
 		os.Exit(1)
 	}
 
+	apiServer, err := apiserver.GetAPIServer(cfg.APIServer, websocketWorker)
+	if err != nil {
+		log.Errorf("error getting api worker: %q", err)
+		os.Exit(1)
+	}
+
+	if err := apiServer.Start(); err != nil {
+		log.Errorf("error starting api worker: %q", err)
+		os.Exit(1)
+	}
+
 	select {
 	case <-stop:
 		log.Infof("shutting down gracefully")
@@ -89,4 +101,5 @@ func main() {
 		cancel()
 	}
 	syslogSvc.Wait()
+	apiServer.Stop()
 }

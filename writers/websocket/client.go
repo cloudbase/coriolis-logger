@@ -72,9 +72,8 @@ func (c *Client) clientReader() {
 		if err := c.conn.ReadJSON(&opts); err != nil {
 			if websocket.IsUnexpectedCloseError(err, websocket.CloseGoingAway, websocket.CloseAbnormalClosure) {
 				log.Errorf("error: %v", err)
-				break
 			}
-			continue
+			break
 		}
 		c.options = opts
 	}
@@ -113,7 +112,6 @@ func (c *Client) clientWriter() {
 func (c *Client) ShouldSend(msg logging.LogMessage) bool {
 	severity := logging.DefaultSeverityLevel
 	var binName string
-
 	if c.options.Severity != nil {
 		severity = *c.options.Severity
 	}
@@ -137,5 +135,6 @@ func (c *Client) SyslogMessageToLogMessage(msg logging.LogMessage) LogMessage {
 		Binary:    msg.BinaryName,
 		Hostname:  msg.Hostname,
 		Timestamp: msg.Timestamp,
+		Message:   msg.Message,
 	}
 }

@@ -29,9 +29,7 @@ format = "automatic"
 
 # storage backend for logs. Available options are:
 #   * influxdb
-#   * stdout
 datastore = "influxdb"
-# datastore = "stdout"
 
     [syslog.influxdb]
     url = "http://127.0.0.1:8086"

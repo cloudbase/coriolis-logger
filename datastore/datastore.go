@@ -6,7 +6,6 @@ import (
 	"github.com/gabriel-samfira/coriolis-logger/config"
 	"github.com/gabriel-samfira/coriolis-logger/datastore/common"
 	"github.com/gabriel-samfira/coriolis-logger/datastore/influxdb"
-	"github.com/gabriel-samfira/coriolis-logger/datastore/stdout"
 	"github.com/pkg/errors"
 )
 
@@ -22,8 +21,6 @@ func GetDatastore(cfg config.Syslog) (common.DataStore, error) {
 			return nil, fmt.Errorf("invalid influxdb datastore config")
 		}
 		return influxdb.NewInfluxDBDatastore(cfg.InfluxDB)
-	case config.StdOutDataStore:
-		return stdout.NewStdOutDatastore()
 	default:
 		return nil, fmt.Errorf("invalid datastore type")
 	}

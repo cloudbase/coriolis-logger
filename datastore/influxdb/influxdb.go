@@ -1,7 +1,6 @@
 package influxdb
 
 import (
-	"fmt"
 	"sync"
 	"time"
 
@@ -93,7 +92,6 @@ func (i *InfluxDBDataStore) Write(logMsg logging.LogMessage) (err error) {
 	}
 	bp.AddPoint(pt)
 	if err := i.con.Write(bp); err != nil {
-		fmt.Println(err)
 		return errors.Wrap(err, "writing log line to influx")
 	}
 	return nil
