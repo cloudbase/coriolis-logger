@@ -25,6 +25,7 @@ func NewLogHandler(hub *wsWriter.Hub) *LogHandlers {
 
 type LogHandlers struct {
 	hub *wsWriter.Hub
+	
 }
 
 func (l *LogHandlers) WSHandler(writer http.ResponseWriter, req *http.Request) {
@@ -63,4 +64,8 @@ func (l *LogHandlers) WSHandler(writer http.ResponseWriter, req *http.Request) {
 		return
 	}
 	client.Go()
+}
+
+func (l *LogHandlers) DownloadLogHandler(writer http.ResponseWriter, req *http.Request) {
+	return
 }
