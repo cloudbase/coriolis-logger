@@ -28,12 +28,10 @@ func (a *aggregateWriter) Write(msg LogMessage) (err error) {
 		return
 	}()
 	for _, val := range a.writers {
-		go func(w Writer) {
-			if err := w.Write(msg); err != nil {
-				errs = append(errs, err)
-				log.Errorf("failed to write log message: %q", err)
-			}
-		}(val)
+		if err := val.Write(msg); err != nil {
+			errs = append(errs, err)
+			log.Errorf("failed to write log message: %q", err)
+		}
 	}
 	return
 }

@@ -216,14 +216,15 @@ func (i InfluxURL) IsSSL() bool {
 
 // InfluxDB holds the influxdb credentials
 type InfluxDB struct {
-	URL          InfluxURL `toml:"url"`
-	Username     string
-	Password     string
-	Database     string
-	VerifyServer bool
-	CACert       string
-	ClientCRT    string
-	ClientKey    string
+	URL           InfluxURL `toml:"url"`
+	Username      string
+	Password      string
+	Database      string
+	VerifyServer  bool
+	CACert        string
+	ClientCRT     string
+	ClientKey     string
+	WriteInterval int `toml:"write_interval"`
 }
 
 func (i *InfluxDB) TLSConfig() (*tls.Config, error) {

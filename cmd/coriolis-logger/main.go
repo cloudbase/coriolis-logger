@@ -47,9 +47,13 @@ func main() {
 	ctx, cancel := context.WithCancel(context.Background())
 	errChan := make(chan error)
 
-	datastore, err := datastore.GetDatastore(cfg.Syslog)
+	datastore, err := datastore.GetDatastore(ctx, cfg.Syslog)
 	if err != nil {
 		log.Errorf("error getting datastore: %q", err)
+		os.Exit(1)
+	}
+	if err := datastore.Start(); err != nil {
+		log.Errorf("error starting datastore: %q", err)
 		os.Exit(1)
 	}
 	stdoutWriter, err := stdout.NewStdOutWriter()
@@ -75,7 +79,8 @@ func main() {
 		os.Exit(1)
 	}
 
-	apiServer, err := apiserver.GetAPIServer(cfg.APIServer, websocketWorker)
+	apiServer, err := apiserver.GetAPIServer(
+		cfg.APIServer, websocketWorker, datastore)
 	if err != nil {
 		log.Errorf("error getting api worker: %q", err)
 		os.Exit(1)
@@ -101,5 +106,6 @@ func main() {
 		cancel()
 	}
 	syslogSvc.Wait()
+	datastore.Wait()
 	apiServer.Stop()
 }

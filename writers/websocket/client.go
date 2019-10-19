@@ -38,7 +38,7 @@ func NewClient(conn *websocket.Conn, opts ClientFilterOptions, hub *Hub) (*Clien
 		options: opts,
 		conn:    conn,
 		hub:     hub,
-		send:    make(chan LogMessage, 100),
+		send:    make(chan LogMessage, 1024),
 	}, nil
 }
 

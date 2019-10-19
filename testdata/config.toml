@@ -36,6 +36,9 @@ datastore = "influxdb"
     username = "coriolis"
     password = "Passw0rd"
     database = "coriolis"
+    # duration in seconds after which this datastore
+    # flushes writes to the database
+    write_interval = 5
     # Verify server enables mutual TLS authentication
     verify_server = false
     # Client TLS certificates

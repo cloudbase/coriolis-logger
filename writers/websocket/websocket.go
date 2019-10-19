@@ -71,7 +71,7 @@ func (h *Hub) run() {
 				msg := client.SyslogMessageToLogMessage(message)
 				select {
 				case client.send <- msg:
-				default:
+				case <-time.After(5 * time.Second):
 					close(client.send)
 					delete(h.clients, id)
 				}

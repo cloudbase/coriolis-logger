@@ -1,8 +1,6 @@
 package stdout
 
 import (
-	"fmt"
-
 	"github.com/gabriel-samfira/coriolis-logger/logging"
 )
 
@@ -16,6 +14,6 @@ var _ logging.Writer = (*StdOutWriter)(nil)
 type StdOutWriter struct{}
 
 func (i *StdOutWriter) Write(logMsg logging.LogMessage) error {
-	fmt.Println(logMsg.Message)
+	// fmt.Println(logMsg.Message)
 	return nil
 }

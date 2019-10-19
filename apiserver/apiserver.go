@@ -11,6 +11,7 @@ import (
 	"github.com/gabriel-samfira/coriolis-logger/apiserver/controllers"
 	"github.com/gabriel-samfira/coriolis-logger/apiserver/routers"
 	"github.com/gabriel-samfira/coriolis-logger/config"
+	"github.com/gabriel-samfira/coriolis-logger/datastore/common"
 	wsWriter "github.com/gabriel-samfira/coriolis-logger/writers/websocket"
 	"github.com/pkg/errors"
 )
@@ -39,8 +40,8 @@ func (h *APIServer) Stop() error {
 	return nil
 }
 
-func GetAPIServer(cfg config.APIServer, hub *wsWriter.Hub) (*APIServer, error) {
-	logHandler := controllers.NewLogHandler(hub)
+func GetAPIServer(cfg config.APIServer, hub *wsWriter.Hub, datastore common.DataStore) (*APIServer, error) {
+	logHandler := controllers.NewLogHandler(hub, datastore)
 	router := routers.GetRouter(logHandler)
 	srv := &http.Server{
 		Handler: router,

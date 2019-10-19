@@ -1,6 +1,7 @@
 package datastore
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/gabriel-samfira/coriolis-logger/config"
@@ -9,7 +10,7 @@ import (
 	"github.com/pkg/errors"
 )
 
-func GetDatastore(cfg config.Syslog) (common.DataStore, error) {
+func GetDatastore(ctx context.Context, cfg config.Syslog) (common.DataStore, error) {
 	if err := cfg.Validate(); err != nil {
 		return nil, errors.Wrap(err, "validating syslog config")
 	}
@@ -20,7 +21,7 @@ func GetDatastore(cfg config.Syslog) (common.DataStore, error) {
 		if cfg.InfluxDB == nil {
 			return nil, fmt.Errorf("invalid influxdb datastore config")
 		}
-		return influxdb.NewInfluxDBDatastore(cfg.InfluxDB)
+		return influxdb.NewInfluxDBDatastore(ctx, cfg.InfluxDB)
 	default:
 		return nil, fmt.Errorf("invalid datastore type")
 	}
