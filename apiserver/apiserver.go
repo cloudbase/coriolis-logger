@@ -42,7 +42,10 @@ func (h *APIServer) Stop() error {
 
 func GetAPIServer(cfg config.APIServer, hub *wsWriter.Hub, datastore common.DataStore) (*APIServer, error) {
 	logHandler := controllers.NewLogHandler(hub, datastore)
-	router := routers.GetRouter(logHandler)
+	router, err := routers.GetRouter(cfg, logHandler)
+	if err != nil {
+		return nil, errors.Wrap(err, "getting router")
+	}
 	srv := &http.Server{
 		Handler: router,
 	}

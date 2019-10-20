@@ -1,6 +1,7 @@
 package controllers
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -8,6 +9,7 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/gabriel-samfira/coriolis-logger/apiserver/auth"
 	"github.com/gabriel-samfira/coriolis-logger/datastore/common"
 	"github.com/gabriel-samfira/coriolis-logger/logging"
 	"github.com/gabriel-samfira/coriolis-logger/params"
@@ -23,6 +25,16 @@ var log = loggo.GetLogger("coriolis.logger.controllers")
 var upgrader = websocket.Upgrader{
 	ReadBufferSize:  1024,
 	WriteBufferSize: 16384,
+}
+
+func canAccess(ctx context.Context) bool {
+	details := ctx.Value(auth.AuthDetailsKey)
+	if details == nil {
+		return false
+	}
+	authDetails := details.(auth.AuthDetails)
+	// TODO (gsamfira): allow policy based access
+	return authDetails.IsAdmin
 }
 
 func NewLogHandler(hub *wsWriter.Hub, datastore common.DataStore) *LogHandlers {
@@ -55,6 +67,12 @@ func getSeverity(severity string) (logging.Severity, error) {
 }
 
 func (l *LogHandlers) WSHandler(writer http.ResponseWriter, req *http.Request) {
+	ctx := req.Context()
+	if !canAccess(ctx) {
+		writer.WriteHeader(http.StatusForbidden)
+		writer.Write([]byte("you need admin level access to view logs"))
+		return
+	}
 	severityStr := req.URL.Query().Get("severity")
 	severity, err := getSeverity(severityStr)
 	if err != nil {
@@ -72,6 +90,11 @@ func (l *LogHandlers) WSHandler(writer http.ResponseWriter, req *http.Request) {
 		Severity:   &severity,
 		BinaryName: &binName,
 	}
+	// TODO (gsamfira): Handle ExpiresAt. Right now, if a client uses
+	// a valid token to authenticate, and keeps the websocket connection
+	// open, it will allow that client to stream logs via websockets
+	// until the connection is broken. We need to forcefully disconnect
+	// the client once the token expires.
 	client, err := wsWriter.NewClient(conn, opts, l.hub)
 	if err != nil {
 		log.Errorf("failed to create new client: %v", err)
@@ -96,18 +119,13 @@ func timestampToTime(stamp string) (time.Time, error) {
 	return tm, nil
 }
 
-/*
-type QueryParams struct {
-	Hostname   string
-	StartDate  time.Time
-	EndDate    time.Time
-	BinaryName string
-	Severity   int
-}
-
-*/
-
 func (l *LogHandlers) DownloadLogHandler(writer http.ResponseWriter, req *http.Request) {
+	ctx := req.Context()
+	if !canAccess(ctx) {
+		writer.WriteHeader(http.StatusForbidden)
+		writer.Write([]byte("you need admin level access to view logs"))
+		return
+	}
 	vars := mux.Vars(req)
 	severityStr := req.URL.Query().Get("severity")
 	severity, err := getSeverity(severityStr)

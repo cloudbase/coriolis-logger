@@ -11,10 +11,13 @@ import (
 	"path/filepath"
 
 	"github.com/BurntSushi/toml"
+	"github.com/juju/loggo"
 	"github.com/pkg/errors"
 	"gopkg.in/mcuadros/go-syslog.v2"
 	"gopkg.in/mcuadros/go-syslog.v2/format"
 )
+
+var log = loggo.GetLogger("coriolis.logger.config")
 
 // DatastoreType represents the datastore type the syslog
 // worker can use to save logs
@@ -34,6 +37,9 @@ const (
 
 	DefaultConfigDir  = "/etc/coriolis-logger"
 	DefaultConfigFile = "/etc/coriolis-logger/coriolis-logger.toml"
+
+	AuthenticationKeystone = "keystone"
+	AuthenticationNone     = "none"
 )
 
 // NewConfig returns a new Config
@@ -92,16 +98,43 @@ func (t *TLSConfig) Validate() error {
 	return nil
 }
 
+type KeystoneAuth struct {
+	AuthURI string `toml:"auth_uri"`
+}
+
+func (k *KeystoneAuth) Validate() error {
+	if k.AuthURI == "" {
+		return fmt.Errorf("missing keystone auth_uri")
+	}
+	return nil
+}
+
 // APIServer holds configuration for the API server
 // worker
 type APIServer struct {
-	Bind      string
-	Port      int
-	UseTLS    bool
-	TLSConfig TLSConfig `toml:"tls"`
+	Bind           string
+	Port           int
+	UseTLS         bool
+	AuthMiddleware string        `toml:"auth_middleware"`
+	TLSConfig      TLSConfig     `toml:"tls"`
+	KeystoneAuth   *KeystoneAuth `toml:"keystone_auth"`
 }
 
 func (a *APIServer) Validate() error {
+	switch a.AuthMiddleware {
+	case AuthenticationKeystone:
+		if a.KeystoneAuth == nil {
+			return fmt.Errorf("keystone authentication enabled, but missing keystone config section")
+		}
+		if err := a.KeystoneAuth.Validate(); err != nil {
+			return errors.Wrap(err, "validating keystone config")
+		}
+	case AuthenticationNone:
+		log.Warningf("authentication is disabled. Anyone can view your logs!")
+	default:
+		return fmt.Errorf("no authentication is enabled")
+	}
+
 	if a.UseTLS {
 		if err := a.TLSConfig.Validate(); err != nil {
 			return errors.Wrap(err, "TLS validation failed")
