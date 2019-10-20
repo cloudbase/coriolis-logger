@@ -29,13 +29,11 @@ func NewInfluxDBDatastore(ctx context.Context, cfg *config.InfluxDB) (common.Dat
 	}
 
 	store := &InfluxDBDataStore{
-		cfg:      cfg,
-		points:   []*client.Point{},
-		ctx:      ctx,
-		closed:   make(chan struct{}),
-		quit:     make(chan struct{}),
-		flushNow: make(chan int, 10),
-		flushed:  make(chan int, 10),
+		cfg:    cfg,
+		points: []*client.Point{},
+		ctx:    ctx,
+		closed: make(chan struct{}),
+		quit:   make(chan struct{}),
 	}
 
 	if err := store.connect(); err != nil {
@@ -47,15 +45,13 @@ func NewInfluxDBDatastore(ctx context.Context, cfg *config.InfluxDB) (common.Dat
 var _ common.DataStore = (*InfluxDBDataStore)(nil)
 
 type InfluxDBDataStore struct {
-	cfg      *config.InfluxDB
-	con      client.Client
-	mut      sync.Mutex
-	points   []*client.Point
-	ctx      context.Context
-	closed   chan struct{}
-	quit     chan struct{}
-	flushNow chan int
-	flushed  chan int
+	cfg    *config.InfluxDB
+	con    client.Client
+	mut    sync.Mutex
+	points []*client.Point
+	ctx    context.Context
+	closed chan struct{}
+	quit   chan struct{}
 }
 
 func (i *InfluxDBDataStore) doWork() {
@@ -78,13 +74,6 @@ func (i *InfluxDBDataStore) doWork() {
 			if err := i.flush(); err != nil {
 				log.Errorf("failed to flush logs to backend: %v", err)
 			}
-		case <-i.flushNow:
-			i.mut.Unlock()
-			if err := i.flush(); err != nil {
-				log.Errorf("failed to flush logs to backend: %v", err)
-			}
-			i.mut.Lock()
-			i.flushed <- 1
 		case <-i.quit:
 			return
 		}
@@ -150,6 +139,12 @@ func (i *InfluxDBDataStore) flush() error {
 }
 
 func (i *InfluxDBDataStore) Write(logMsg logging.LogMessage) (err error) {
+	if len(i.points) >= 20000 {
+		if err := i.flush(); err != nil {
+			return errors.Wrap(err, "flushing logs")
+		}
+	}
+
 	i.mut.Lock()
 	defer i.mut.Unlock()
 	tags := map[string]string{
@@ -171,14 +166,6 @@ func (i *InfluxDBDataStore) Write(logMsg logging.LogMessage) (err error) {
 	}
 	i.points = append(i.points, pt)
 
-	if len(i.points) >= 20000 {
-		i.flushNow <- 1
-		select {
-		case <-i.flushed:
-		case <-time.After(60 * time.Second):
-			return fmt.Errorf("timed out flushing logs")
-		}
-	}
 	return nil
 }
 
