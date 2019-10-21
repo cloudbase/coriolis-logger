@@ -4,10 +4,8 @@ go 1.13
 
 require (
 	github.com/BurntSushi/toml v0.3.1
-	github.com/NYTimes/gziphandler v1.1.1
 	github.com/databus23/keystone v0.0.0-20180111110916-350fd0e663cd
 	github.com/google/uuid v1.1.1
-	github.com/gophercloud/gophercloud v0.6.0
 	github.com/gorilla/handlers v1.4.2
 	github.com/gorilla/mux v1.7.3
 	github.com/gorilla/websocket v1.4.1
