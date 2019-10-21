@@ -78,7 +78,7 @@ func (l *LogHandlers) WSHandler(writer http.ResponseWriter, req *http.Request) {
 	if err != nil {
 		log.Warningf("invalid severity %q. Ignoring", severityStr)
 	}
-	binName := req.URL.Query().Get("binary_name")
+	binName := req.URL.Query().Get("app_name")
 
 	conn, err := upgrader.Upgrade(writer, req, nil)
 	if err != nil {
@@ -87,8 +87,8 @@ func (l *LogHandlers) WSHandler(writer http.ResponseWriter, req *http.Request) {
 	}
 
 	opts := wsWriter.ClientFilterOptions{
-		Severity:   &severity,
-		BinaryName: &binName,
+		Severity: &severity,
+		AppName:  &binName,
 	}
 	// TODO (gsamfira): Handle ExpiresAt. Right now, if a client uses
 	// a valid token to authenticate, and keeps the websocket connection
@@ -151,10 +151,10 @@ func (l *LogHandlers) DownloadLogHandler(writer http.ResponseWriter, req *http.R
 	}
 
 	queryParams := params.QueryParams{
-		StartDate:  startDate,
-		EndDate:    endDate,
-		BinaryName: vars["log"],
-		Severity:   int(severity),
+		StartDate: startDate,
+		EndDate:   endDate,
+		AppName:   vars["log"],
+		Severity:  int(severity),
 	}
 
 	reader := l.store.ResultReader(queryParams)

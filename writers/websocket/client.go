@@ -27,8 +27,8 @@ const (
 )
 
 type ClientFilterOptions struct {
-	Severity   *logging.Severity `json:"omitempty"`
-	BinaryName *string
+	Severity *logging.Severity `json:"omitempty"`
+	AppName  *string
 }
 
 func NewClient(conn *websocket.Conn, opts ClientFilterOptions, hub *Hub) (*Client, error) {
@@ -116,11 +116,11 @@ func (c *Client) ShouldSend(msg logging.LogMessage) bool {
 		severity = *c.options.Severity
 	}
 
-	if c.options.BinaryName != nil {
-		binName = *c.options.BinaryName
+	if c.options.AppName != nil {
+		binName = *c.options.AppName
 	}
 
-	if binName != "" && binName != msg.BinaryName {
+	if binName != "" && binName != msg.AppName {
 		return false
 	}
 	if msg.Severity > severity {
@@ -132,7 +132,7 @@ func (c *Client) ShouldSend(msg logging.LogMessage) bool {
 func (c *Client) SyslogMessageToLogMessage(msg logging.LogMessage) LogMessage {
 	return LogMessage{
 		Severity:  int(msg.Severity),
-		Binary:    msg.BinaryName,
+		AppName:   msg.AppName,
 		Hostname:  msg.Hostname,
 		Timestamp: msg.Timestamp,
 		Message:   msg.Message,

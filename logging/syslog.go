@@ -72,15 +72,15 @@ const (
 )
 
 type LogMessage struct {
-	Timestamp  time.Time
-	Hostname   string
-	Priority   int
-	Facility   Facility
-	Severity   Severity
-	BinaryName string
-	ProcID     int
-	Message    string
-	RFC        RFCVersion
+	Timestamp time.Time
+	Hostname  string
+	Priority  int
+	Facility  Facility
+	Severity  Severity
+	AppName   string
+	ProcID    int
+	Message   string
+	RFC       RFCVersion
 }
 
 func validateMessage(msg map[string]interface{}, rfc RFCVersion) bool {
@@ -127,14 +127,14 @@ func SyslogToLogMessage(msg map[string]interface{}) (LogMessage, error) {
 	switch rfc {
 	case RFC3164:
 		return LogMessage{
-			Timestamp:  msg["timestamp"].(time.Time),
-			Hostname:   msg["hostname"].(string),
-			Priority:   msg["priority"].(int),
-			Facility:   Facility(msg["facility"].(int)),
-			Severity:   Severity(msg["severity"].(int)),
-			BinaryName: msg["tag"].(string),
-			Message:    msg["content"].(string),
-			RFC:        rfc,
+			Timestamp: msg["timestamp"].(time.Time),
+			Hostname:  msg["hostname"].(string),
+			Priority:  msg["priority"].(int),
+			Facility:  Facility(msg["facility"].(int)),
+			Severity:  Severity(msg["severity"].(int)),
+			AppName:   msg["tag"].(string),
+			Message:   msg["content"].(string),
+			RFC:       rfc,
 		}, nil
 	case RFC5424:
 		var procID int
@@ -143,15 +143,15 @@ func SyslogToLogMessage(msg map[string]interface{}) (LogMessage, error) {
 			procID, _ = strconv.Atoi(parsedProcID)
 		}
 		return LogMessage{
-			Timestamp:  msg["timestamp"].(time.Time),
-			Hostname:   msg["hostname"].(string),
-			Priority:   msg["priority"].(int),
-			Facility:   Facility(msg["facility"].(int)),
-			Severity:   Severity(msg["severity"].(int)),
-			BinaryName: msg["app_name"].(string),
-			Message:    msg["message"].(string),
-			ProcID:     procID,
-			RFC:        rfc,
+			Timestamp: msg["timestamp"].(time.Time),
+			Hostname:  msg["hostname"].(string),
+			Priority:  msg["priority"].(int),
+			Facility:  Facility(msg["facility"].(int)),
+			Severity:  Severity(msg["severity"].(int)),
+			AppName:   msg["app_name"].(string),
+			Message:   msg["message"].(string),
+			ProcID:    procID,
+			RFC:       rfc,
 		}, nil
 	default:
 		return LogMessage{}, fmt.Errorf("failed to parse log message")

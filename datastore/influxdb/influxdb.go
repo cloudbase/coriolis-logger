@@ -160,7 +160,7 @@ func (i *InfluxDBDataStore) Write(logMsg logging.LogMessage) (err error) {
 	if logMsg.RFC == logging.RFC3164 {
 		tm = time.Now()
 	}
-	pt, err := client.NewPoint(logMsg.BinaryName, tags, fields, tm)
+	pt, err := client.NewPoint(logMsg.AppName, tags, fields, tm)
 	if err != nil {
 		return errors.Wrap(err, "adding new log message point")
 	}
@@ -226,11 +226,11 @@ type influxDBReader struct {
 }
 
 func (i *influxDBReader) prepareQuery() (string, error) {
-	if i.params.BinaryName == "" {
+	if i.params.AppName == "" {
 		return "", fmt.Errorf("missing application name")
 	}
 	undefinedDate := time.Time{}
-	q := fmt.Sprintf(`select time,severity,message from %s`, i.params.BinaryName)
+	q := fmt.Sprintf(`select time,severity,message from %s`, i.params.AppName)
 	if !i.params.StartDate.Equal(undefinedDate) || !i.params.EndDate.Equal(undefinedDate) || i.params.Hostname != "" {
 		q += ` where `
 	}
