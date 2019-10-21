@@ -230,7 +230,7 @@ func (i *influxDBReader) prepareQuery() (string, error) {
 		return "", fmt.Errorf("missing application name")
 	}
 	undefinedDate := time.Time{}
-	q := fmt.Sprintf(`select time,severity,message from %s`, i.params.AppName)
+	q := fmt.Sprintf(`select time,severity,message from "%s"`, i.params.AppName)
 	if !i.params.StartDate.Equal(undefinedDate) || !i.params.EndDate.Equal(undefinedDate) || i.params.Hostname != "" {
 		q += ` where `
 	}
@@ -252,12 +252,11 @@ func (i *influxDBReader) prepareQuery() (string, error) {
 	if i.params.Hostname != "" {
 		options = append(options, fmt.Sprintf(`hostname='%s'`, i.params.Hostname))
 	}
-	// if i.params.Severity != 0 {
-	// 	options = append(options, fmt.Sprintf(`severity < '%d'`, i.params.Severity))
-	// }
+
 	if len(options) > 0 {
 		q += strings.Join(options, ` and `)
 	}
+
 	return q, nil
 }
 
