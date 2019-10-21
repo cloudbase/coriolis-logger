@@ -64,8 +64,10 @@ func (i *InfluxDBDataStore) doWork() {
 		interval = i.cfg.WriteInterval
 	}
 	ticker := time.NewTicker(time.Duration(interval) * time.Second)
+	rotationTicker := time.NewTicker(1 * time.Hour)
 	defer func() {
 		ticker.Stop()
+		rotationTicker.Stop()
 		close(i.closed)
 	}()
 	for {
@@ -75,6 +77,15 @@ func (i *InfluxDBDataStore) doWork() {
 		case <-ticker.C:
 			if err := i.flush(); err != nil {
 				log.Errorf("failed to flush logs to backend: %v", err)
+			}
+		case <-rotationTicker.C:
+			retentionPeriod := i.cfg.GetLogRetention()
+			log.Infof("deleting logs older than %d days", retentionPeriod)
+			now := time.Now()
+			day := 24 * time.Hour
+			olderThan := now.Add(time.Duration(-retentionPeriod) * day)
+			if err := i.Rotate(olderThan); err != nil {
+				log.Errorf("failed to rotate logs: %v", err)
 			}
 		case <-i.quit:
 			return
@@ -172,6 +183,23 @@ func (i *InfluxDBDataStore) Write(logMsg logging.LogMessage) (err error) {
 }
 
 func (i *InfluxDBDataStore) Rotate(olderThan time.Time) error {
+	logList, err := i.List()
+	if err != nil {
+		return errors.Wrap(err, "listing logs")
+	}
+	for _, val := range logList {
+		for _, logName := range val {
+			q := fmt.Sprintf(`delete from "%s" where time < %d`, logName, olderThan.UnixNano())
+			influxQ := client.NewQuery(q, i.cfg.Database, "ns")
+			resp, err := i.con.Query(influxQ)
+			if err != nil {
+				return errors.Wrap(err, "executing query")
+			}
+			if resp.Err != "" {
+				return fmt.Errorf("error executing query: %s", resp.Err)
+			}
+		}
+	}
 	return nil
 }
 
@@ -196,6 +224,9 @@ func (i *InfluxDBDataStore) List() ([]map[string]string, error) {
 				break
 			}
 			return nil, errors.Wrap(err, "fetching response")
+		}
+		if r.Err != "" {
+			return nil, fmt.Errorf("error executing query: %s", r.Err)
 		}
 		for _, result := range r.Results {
 			for _, serie := range result.Series {

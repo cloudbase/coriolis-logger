@@ -56,3 +56,10 @@ datastore = "influxdb"
     # cacert = "/tmp/ca.pem"
     # client_crt = "/tmp/client-crt.pem"
     # client_key = "/tmp/client-key.pem"
+
+    # The retention period for logs in days. Logs older than
+    # this, will be deleted. If missing, this option default
+    # to 3 days. This setting will be moved in the future
+    # under the [syslog] section, when we will support multiple
+    # datastores.
+    log_retention_period = 3

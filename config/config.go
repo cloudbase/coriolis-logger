@@ -42,6 +42,8 @@ const (
 
 	AuthenticationKeystone = "keystone"
 	AuthenticationNone     = "none"
+
+	DefaultLogRetentionPeriod = 3
 )
 
 // NewConfig returns a new Config
@@ -252,15 +254,23 @@ func (i InfluxURL) IsSSL() bool {
 
 // InfluxDB holds the influxdb credentials
 type InfluxDB struct {
-	URL           InfluxURL `toml:"url"`
-	Username      string
-	Password      string
-	Database      string
-	VerifyServer  bool
-	CACert        string
-	ClientCRT     string
-	ClientKey     string
-	WriteInterval int `toml:"write_interval"`
+	URL                InfluxURL `toml:"url"`
+	Username           string
+	Password           string
+	Database           string
+	VerifyServer       bool
+	CACert             string
+	ClientCRT          string
+	ClientKey          string
+	WriteInterval      int `toml:"write_interval"`
+	LogRetentionPeriod int `toml:"log_retention_period"`
+}
+
+func (i InfluxDB) GetLogRetention() int {
+	if i.LogRetentionPeriod == 0 {
+		return DefaultLogRetentionPeriod
+	}
+	return i.LogRetentionPeriod
 }
 
 func (i *InfluxDB) TLSConfig() (*tls.Config, error) {
