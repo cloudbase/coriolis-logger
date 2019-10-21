@@ -41,8 +41,11 @@ datastore = "influxdb"
 
     [syslog.influxdb]
     url = "http://127.0.0.1:8086"
+    # If influxDB auth is enabled, use this username
     username = "coriolis"
+    # A super secret password. Obviously needs changing.
     password = "Passw0rd"
+    # Logs database
     database = "coriolis"
     # duration in seconds after which this datastore
     # flushes writes to the database
