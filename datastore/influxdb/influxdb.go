@@ -180,13 +180,13 @@ func (i *InfluxDBDataStore) ResultReader(p params.QueryParams) common.Reader {
 	}
 }
 
-func (i *InfluxDBDataStore) List() ([]string, error) {
+func (i *InfluxDBDataStore) List() ([]map[string]string, error) {
 	query := client.NewQuery("SHOW MEASUREMENTS", i.cfg.Database, "ns")
 	resp, err := i.con.QueryAsChunk(query)
 	if err != nil {
 		return nil, errors.Wrap(err, "listing logs")
 	}
-	ret := []string{}
+	ret := []map[string]string{}
 	for {
 		r, err := resp.NextResponse()
 		if err != nil {
@@ -201,7 +201,7 @@ func (i *InfluxDBDataStore) List() ([]string, error) {
 					if len(val) == 0 {
 						continue
 					}
-					ret = append(ret, val[0].(string))
+					ret = append(ret, map[string]string{"log_name": val[0].(string)})
 				}
 			}
 		}
@@ -241,7 +241,9 @@ func (i *influxDBReader) prepareQuery() (string, error) {
 		options = append(
 			options,
 			fmt.Sprintf(`time >= %d`, i.params.StartDate.UnixNano()))
-	} else if !i.params.EndDate.Equal(undefinedDate) {
+	}
+
+	if !i.params.EndDate.Equal(undefinedDate) {
 		options = append(
 			options,
 			fmt.Sprintf(`time <= %d`, i.params.EndDate.UnixNano()))

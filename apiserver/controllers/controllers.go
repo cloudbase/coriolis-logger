@@ -144,7 +144,7 @@ func (l *LogHandlers) DownloadLogHandler(writer http.ResponseWriter, req *http.R
 	}
 
 	endDateStamp := req.URL.Query().Get("end_date")
-	endDate, err := timestampToTime(startDateStamp)
+	endDate, err := timestampToTime(endDateStamp)
 	if err != nil {
 		writer.WriteHeader(http.StatusBadRequest)
 		fmt.Fprintf(writer, fmt.Sprintf("invalid end date: %q", endDateStamp))
@@ -182,7 +182,10 @@ func (l *LogHandlers) ListLogsHandler(writer http.ResponseWriter, req *http.Requ
 		writer.WriteHeader(http.StatusInternalServerError)
 		log.Errorf("error listing logs: %v", err)
 	}
-	js, err := json.Marshal(logs)
+	ret := map[string][]map[string]string{
+		"logs": logs,
+	}
+	js, err := json.Marshal(ret)
 	if err != nil {
 		writer.WriteHeader(http.StatusInternalServerError)
 		log.Errorf("error listing logs: %v", err)

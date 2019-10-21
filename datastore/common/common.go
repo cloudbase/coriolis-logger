@@ -15,7 +15,7 @@ type DataStore interface {
 	Write(logMsg logging.LogMessage) error
 	Rotate(olderThan time.Time) error
 	ResultReader(p params.QueryParams) Reader
-	List() ([]string, error)
+	List() ([]map[string]string, error)
 	Query(q client.Query) (*client.ChunkedResponse, error)
 }
 
