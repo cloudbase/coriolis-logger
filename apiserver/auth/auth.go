@@ -20,7 +20,7 @@ import (
 	"time"
 
 	"github.com/databus23/keystone"
-	"github.com/gabriel-samfira/coriolis-logger/config"
+	"coriolis-logger/config"
 	"github.com/juju/loggo"
 	"github.com/pkg/errors"
 )

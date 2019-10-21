@@ -22,11 +22,11 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/gabriel-samfira/coriolis-logger/apiserver/controllers"
-	"github.com/gabriel-samfira/coriolis-logger/apiserver/routers"
-	"github.com/gabriel-samfira/coriolis-logger/config"
-	"github.com/gabriel-samfira/coriolis-logger/datastore/common"
-	wsWriter "github.com/gabriel-samfira/coriolis-logger/writers/websocket"
+	"coriolis-logger/apiserver/controllers"
+	"coriolis-logger/apiserver/routers"
+	"coriolis-logger/config"
+	"coriolis-logger/datastore/common"
+	wsWriter "coriolis-logger/writers/websocket"
 	"github.com/pkg/errors"
 )
 

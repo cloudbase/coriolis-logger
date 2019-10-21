@@ -21,9 +21,9 @@ import (
 
 	syslog "gopkg.in/mcuadros/go-syslog.v2"
 
-	"github.com/gabriel-samfira/coriolis-logger/config"
-	"github.com/gabriel-samfira/coriolis-logger/logging"
-	"github.com/gabriel-samfira/coriolis-logger/worker"
+	"coriolis-logger/config"
+	"coriolis-logger/logging"
+	"coriolis-logger/worker"
 	"github.com/juju/loggo"
 	"github.com/pkg/errors"
 )

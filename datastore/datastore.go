@@ -18,9 +18,9 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/gabriel-samfira/coriolis-logger/config"
-	"github.com/gabriel-samfira/coriolis-logger/datastore/common"
-	"github.com/gabriel-samfira/coriolis-logger/datastore/influxdb"
+	"coriolis-logger/config"
+	"coriolis-logger/datastore/common"
+	"coriolis-logger/datastore/influxdb"
 	"github.com/pkg/errors"
 )
 

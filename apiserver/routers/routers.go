@@ -18,9 +18,9 @@ import (
 	"net/http"
 	"os"
 
-	"github.com/gabriel-samfira/coriolis-logger/apiserver/auth"
-	"github.com/gabriel-samfira/coriolis-logger/apiserver/controllers"
-	"github.com/gabriel-samfira/coriolis-logger/config"
+	"coriolis-logger/apiserver/auth"
+	"coriolis-logger/apiserver/controllers"
+	"coriolis-logger/config"
 	gorillaHandlers "github.com/gorilla/handlers"
 	"github.com/gorilla/mux"
 	"github.com/pkg/errors"

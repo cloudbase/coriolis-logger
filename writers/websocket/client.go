@@ -19,7 +19,7 @@ import (
 
 	"github.com/google/uuid"
 
-	"github.com/gabriel-samfira/coriolis-logger/logging"
+	"coriolis-logger/logging"
 	"github.com/gorilla/websocket"
 	"github.com/juju/loggo"
 )

@@ -29,10 +29,10 @@ import (
 	"github.com/juju/loggo"
 	"github.com/pkg/errors"
 
-	"github.com/gabriel-samfira/coriolis-logger/config"
-	"github.com/gabriel-samfira/coriolis-logger/datastore/common"
-	"github.com/gabriel-samfira/coriolis-logger/logging"
-	"github.com/gabriel-samfira/coriolis-logger/params"
+	"coriolis-logger/config"
+	"coriolis-logger/datastore/common"
+	"coriolis-logger/logging"
+	"coriolis-logger/params"
 )
 
 var log = loggo.GetLogger("coriolis.logger.datastore.influxdb")

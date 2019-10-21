@@ -21,14 +21,14 @@ import (
 	"os/signal"
 	"syscall"
 
-	"github.com/gabriel-samfira/coriolis-logger/apiserver"
-	"github.com/gabriel-samfira/coriolis-logger/writers/stdout"
-	"github.com/gabriel-samfira/coriolis-logger/writers/websocket"
+	"coriolis-logger/apiserver"
+	"coriolis-logger/config"
+	"coriolis-logger/datastore"
+	"coriolis-logger/logging"
+	"coriolis-logger/syslog"
+	"coriolis-logger/writers/stdout"
+	"coriolis-logger/writers/websocket"
 
-	"github.com/gabriel-samfira/coriolis-logger/config"
-	"github.com/gabriel-samfira/coriolis-logger/datastore"
-	"github.com/gabriel-samfira/coriolis-logger/logging"
-	"github.com/gabriel-samfira/coriolis-logger/syslog"
 	"github.com/juju/loggo"
 )
 

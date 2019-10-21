@@ -17,9 +17,9 @@ package common
 import (
 	"time"
 
-	"github.com/gabriel-samfira/coriolis-logger/logging"
-	"github.com/gabriel-samfira/coriolis-logger/params"
-	"github.com/gabriel-samfira/coriolis-logger/worker"
+	"coriolis-logger/logging"
+	"coriolis-logger/params"
+	"coriolis-logger/worker"
 	client "github.com/influxdata/influxdb1-client/v2"
 )
 

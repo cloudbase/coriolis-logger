@@ -17,7 +17,7 @@ package stdout
 import (
 	"fmt"
 
-	"github.com/gabriel-samfira/coriolis-logger/logging"
+	"coriolis-logger/logging"
 )
 
 func NewStdOutWriter() (logging.Writer, error) {

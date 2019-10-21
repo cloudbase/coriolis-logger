@@ -19,8 +19,8 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/gabriel-samfira/coriolis-logger/logging"
-	"github.com/gabriel-samfira/coriolis-logger/worker"
+	"coriolis-logger/logging"
+	"coriolis-logger/worker"
 )
 
 func NewHub(ctx context.Context) *Hub {

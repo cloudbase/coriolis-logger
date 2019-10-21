@@ -1,4 +1,4 @@
-module github.com/gabriel-samfira/coriolis-logger
+module coriolis-logger
 
 go 1.13
 
