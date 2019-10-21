@@ -49,7 +49,7 @@ func main() {
 	}
 	cfg, err := config.NewConfig(*cfgFile)
 	if err != nil {
-		log.Errorf("error reading config: %q", err)
+		log.Errorf("error validating config: %q", err)
 		os.Exit(1)
 	}
 

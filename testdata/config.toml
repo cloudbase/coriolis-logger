@@ -2,16 +2,24 @@
 bind = "0.0.0.0"
 port = 9998
 use_tls = false
+
+# Authentication middleware to use. Available options are:
+#  * keystone
+#  * none
+# coriolis-logger will refuse to start if this option is
+# missing. To disable authentication, you must explicitly
+# set this option to "none"
 auth_middleware = "keystone"
 
     [apiserver.keystone_auth]
+    # The keystone auth URI
     auth_uri = "http://127.0.0.1:5000/v3"
 
     # API server TLS config
     [apiserver.tls]
-    crt = "/tmp/bla.pem"
-    key = "/tmp/bla-key.pem"
-    cacert = "/tmp/bla-ca.pem"
+    crt = "/tmp/certificate.pem"
+    key = "/tmp/key.pem"
+    cacert = "/tmp/ca-cert.pem"
 
 [syslog]
 # Possible values: unixgram, tcp, udp
@@ -43,7 +51,7 @@ datastore = "influxdb"
     url = "http://127.0.0.1:8086"
     # If influxDB auth is enabled, use this username
     username = "coriolis"
-    # A super secret password. Obviously needs changing.
+    # A super secret password. Obviously needs changing :-)
     password = "Passw0rd"
     # Logs database
     database = "coriolis"
