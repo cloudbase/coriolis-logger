@@ -1,3 +1,5 @@
+// Copyright 2019 Cloudbase Solutions SRL
+
 package config
 
 import (
@@ -154,11 +156,12 @@ func (a *APIServer) Validate() error {
 }
 
 type Syslog struct {
-	Listener  ListenerType
-	Address   string
-	Format    string
-	DataStore DatastoreType
-	InfluxDB  *InfluxDB `toml:"influxdb"`
+	Listener    ListenerType
+	Address     string
+	Format      string
+	LogToStdout bool `toml:"log_to_stdout"`
+	DataStore   DatastoreType
+	InfluxDB    *InfluxDB `toml:"influxdb"`
 }
 
 func (s *Syslog) LogFormat() (format.Format, error) {

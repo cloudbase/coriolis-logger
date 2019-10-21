@@ -1,5 +1,7 @@
 package routers
 
+// Copyright 2019 Cloudbase Solutions SRL
+
 import (
 	"net/http"
 	"os"

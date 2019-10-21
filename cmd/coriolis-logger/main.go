@@ -1,3 +1,5 @@
+// Copyright 2019 Cloudbase Solutions SRL
+
 package main
 
 import (
@@ -47,6 +49,8 @@ func main() {
 	ctx, cancel := context.WithCancel(context.Background())
 	errChan := make(chan error)
 
+	configuredWriters := []logging.Writer{}
+
 	datastore, err := datastore.GetDatastore(ctx, cfg.Syslog)
 	if err != nil {
 		log.Errorf("error getting datastore: %q", err)
@@ -56,10 +60,15 @@ func main() {
 		log.Errorf("error starting datastore: %q", err)
 		os.Exit(1)
 	}
-	stdoutWriter, err := stdout.NewStdOutWriter()
-	if err != nil {
-		log.Errorf("error getting stdout datastore: %q", err)
-		os.Exit(1)
+	configuredWriters = append(configuredWriters, datastore)
+
+	if cfg.Syslog.LogToStdout {
+		stdoutWriter, err := stdout.NewStdOutWriter()
+		if err != nil {
+			log.Errorf("error getting stdout datastore: %q", err)
+			os.Exit(1)
+		}
+		configuredWriters = append(configuredWriters, stdoutWriter)
 	}
 
 	websocketWorker := websocket.NewHub(ctx)
@@ -67,8 +76,10 @@ func main() {
 		log.Errorf("error starting websocket worker: %q", err)
 		os.Exit(1)
 	}
+	configuredWriters = append(configuredWriters, websocketWorker)
 
-	writer := logging.NewAggregateWriter(datastore, stdoutWriter, websocketWorker)
+	writer := logging.NewAggregateWriter(configuredWriters...)
+
 	syslogSvc, err := syslog.NewSyslogServer(ctx, cfg.Syslog, writer, errChan)
 	if err != nil {
 		log.Errorf("error getting syslog worker: %q", err)

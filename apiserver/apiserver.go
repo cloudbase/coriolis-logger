@@ -1,3 +1,5 @@
+// Copyright 2019 Cloudbase Solutions SRL
+
 package apiserver
 
 import (

@@ -1,3 +1,5 @@
+// Copyright 2019 Cloudbase Solutions SRL
+
 package syslog
 
 import (
@@ -91,9 +93,6 @@ func (s *SyslogWorker) doWork() {
 				continue
 				// TODO (gsamfira): decide whether we want to stop the server
 				// when an error occurs here.
-				// s.errChan <- err
-				// s.Stop()
-				// return
 			}
 		case <-s.ctx.Done():
 			s.Stop()
