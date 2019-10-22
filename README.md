@@ -180,3 +180,16 @@ except KeyboardInterrupt:
     print("stopped")
 
 ```
+
+## Using with docker
+
+If coriolis-logger is configured to listen on ```/tmp/coriolis-logger.sock```, to use it with a docker container, you simply have to mount the socket file as ```/dev/log``` inside the container.
+
+```bash
+$ docker run --rm -it -v /tmp/coriolis-logging.sock:/dev/log ubuntu:latest bash
+root@415b368958bc:/# ls -l /dev/log
+srwxrwxr-x 1 1000 1000 0 Oct 21 23:11 /dev/log
+root@415b368958bc:/# logger --rfc5424 "this is a test"
+```
+
+If you are listening on web sockets using the above example, you should now see the log message on your screen. 
