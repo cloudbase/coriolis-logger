@@ -17,6 +17,7 @@ package syslog
 import (
 	"context"
 	"fmt"
+	"io"
 	"os"
 
 	syslog "gopkg.in/mcuadros/go-syslog.v2"
@@ -24,6 +25,7 @@ import (
 	"coriolis-logger/config"
 	"coriolis-logger/logging"
 	"coriolis-logger/worker"
+
 	"github.com/juju/loggo"
 	"github.com/pkg/errors"
 )
@@ -49,22 +51,7 @@ func NewSyslogServer(ctx context.Context, cfg config.Syslog, writer logging.Writ
 	server.SetFormat(logFormat)
 	server.SetHandler(handler)
 
-	switch cfg.Listener {
-	case config.UnixDgramListener:
-		if err := server.ListenUnixgram(cfg.Address); err != nil {
-			return nil, errors.Wrap(err, fmt.Sprintf("listening on unix socket %q", cfg.Address))
-		}
-	case config.TCPListener:
-		if err := server.ListenTCP(cfg.Address); err != nil {
-			return nil, errors.Wrap(err, fmt.Sprintf("listening on TCP %q", cfg.Address))
-		}
-	case config.UDPListener:
-		if err := server.ListenUDP(cfg.Address); err != nil {
-			return nil, errors.Wrap(err, fmt.Sprintf("listening on UDP %q", cfg.Address))
-		}
-	}
-
-	return &SyslogWorker{
+	worker := &SyslogWorker{
 		server:  server,
 		logging: writer,
 		cfg:     cfg,
@@ -72,7 +59,9 @@ func NewSyslogServer(ctx context.Context, cfg config.Syslog, writer logging.Writ
 		ctx:     ctx,
 		errChan: errChan,
 		closed:  make(chan struct{}),
-	}, nil
+	}
+
+	return worker, nil
 }
 
 var _ worker.SimpleWorker = (*SyslogWorker)(nil)
@@ -114,11 +103,69 @@ func (s *SyslogWorker) doWork() {
 }
 
 func (s *SyslogWorker) Start() error {
+	if err := s.cleanStaleSocket(); err != nil {
+		return errors.Wrap(err, "removing socket")
+	}
+
+	switch s.cfg.Listener {
+	case config.UnixDgramListener:
+		if err := s.server.ListenUnixgram(s.cfg.Address); err != nil {
+			return errors.Wrap(err, fmt.Sprintf("listening on unix socket %q", s.cfg.Address))
+		}
+	case config.TCPListener:
+		if err := s.server.ListenTCP(s.cfg.Address); err != nil {
+			return errors.Wrap(err, fmt.Sprintf("listening on TCP %q", s.cfg.Address))
+		}
+	case config.UDPListener:
+		if err := s.server.ListenUDP(s.cfg.Address); err != nil {
+			return errors.Wrap(err, fmt.Sprintf("listening on UDP %q", s.cfg.Address))
+		}
+	}
+
 	err := s.server.Boot()
 	if err != nil {
 		return errors.Wrap(err, "starting syslog server")
 	}
 	go s.doWork()
+	return nil
+}
+
+func dirIsEmpty(name string) (bool, error) {
+	f, err := os.Open(name)
+	if err != nil {
+		return false, err
+	}
+	defer f.Close()
+
+	_, err = f.Readdirnames(1)
+	if err == io.EOF {
+		return true, nil
+	}
+	return false, err
+}
+
+func (s *SyslogWorker) cleanStaleSocket() error {
+	if s.cfg.Listener != config.UnixDgramListener {
+		return nil
+	}
+	if mode, err := os.Stat(s.cfg.Address); err == nil {
+		if mode.IsDir() {
+			empty, err := dirIsEmpty(s.cfg.Address)
+			if err != nil {
+				return err
+			}
+			if empty {
+				if err := os.RemoveAll(s.cfg.Address); err != nil {
+					return err
+				}
+			}
+		} else if mode.Mode()&os.ModeSocket != 0 {
+			log.Infof("removing unix socket %q", s.cfg.Address)
+			if err := os.Remove(s.cfg.Address); err != nil {
+				return errors.Wrap(err, "removing unix socket")
+			}
+		}
+	}
 	return nil
 }
 
@@ -136,15 +183,8 @@ func (s *SyslogWorker) Stop() error {
 	if err := s.server.Kill(); err != nil {
 		return errors.Wrap(err, "killing syslog server")
 	}
-	if s.cfg.Listener == config.UnixDgramListener {
-		if mode, err := os.Stat(s.cfg.Address); err == nil {
-			if mode.Mode()&os.ModeSocket != 0 {
-				log.Infof("removing unix socket %q", s.cfg.Address)
-				if err := os.Remove(s.cfg.Address); err != nil {
-					return errors.Wrap(err, "removing unix socket")
-				}
-			}
-		}
+	if err := s.cleanStaleSocket(); err != nil {
+		return errors.Wrap(err, "removing socket")
 	}
 	return nil
 }

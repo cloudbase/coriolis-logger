@@ -1,6 +1,6 @@
 [apiserver]
 bind = "0.0.0.0"
-port = 9998
+port = 9997
 use_tls = false
 
 # Authentication middleware to use. Available options are:
