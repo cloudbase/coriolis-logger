@@ -217,6 +217,13 @@ func (s *Syslog) Validate() error {
 		if _, err := os.Stat(parent); err != nil {
 			return errors.Wrap(err, "fetching info about dirname")
 		}
+
+		if mode, err := os.Stat(s.Address); err == nil {
+			if mode.Mode()&os.ModeSocket == 0 {
+				return fmt.Errorf(
+					"cannot use %q as address. File already exists and is not socket", s.Address)
+			}
+		}
 	case TCPListener, UDPListener:
 	default:
 		return fmt.Errorf("invalid listener type %q", s.Listener)
