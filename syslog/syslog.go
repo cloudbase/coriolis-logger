@@ -17,7 +17,6 @@ package syslog
 import (
 	"context"
 	"fmt"
-	"io"
 	"os"
 
 	syslog "gopkg.in/mcuadros/go-syslog.v2"
@@ -130,36 +129,12 @@ func (s *SyslogWorker) Start() error {
 	return nil
 }
 
-func dirIsEmpty(name string) (bool, error) {
-	f, err := os.Open(name)
-	if err != nil {
-		return false, err
-	}
-	defer f.Close()
-
-	_, err = f.Readdirnames(1)
-	if err == io.EOF {
-		return true, nil
-	}
-	return false, err
-}
-
 func (s *SyslogWorker) cleanStaleSocket() error {
 	if s.cfg.Listener != config.UnixDgramListener {
 		return nil
 	}
 	if mode, err := os.Stat(s.cfg.Address); err == nil {
-		if mode.IsDir() {
-			empty, err := dirIsEmpty(s.cfg.Address)
-			if err != nil {
-				return err
-			}
-			if empty {
-				if err := os.RemoveAll(s.cfg.Address); err != nil {
-					return err
-				}
-			}
-		} else if mode.Mode()&os.ModeSocket != 0 {
+		if mode.Mode()&os.ModeSocket != 0 {
 			log.Infof("removing unix socket %q", s.cfg.Address)
 			if err := os.Remove(s.cfg.Address); err != nil {
 				return errors.Wrap(err, "removing unix socket")
