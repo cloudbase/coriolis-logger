@@ -28,6 +28,7 @@ import (
 	"coriolis-logger/logging"
 	"coriolis-logger/params"
 	wsWriter "coriolis-logger/writers/websocket"
+
 	"github.com/gorilla/mux"
 	"github.com/gorilla/websocket"
 	"github.com/juju/loggo"
@@ -172,19 +173,37 @@ func (l *LogHandlers) DownloadLogHandler(writer http.ResponseWriter, req *http.R
 	}
 
 	reader := l.store.ResultReader(queryParams)
+	data, err := reader.ReadNext()
+	if err != nil {
+		if err != io.EOF {
+			writer.WriteHeader(http.StatusInternalServerError)
+			log.Errorf("error fetching logs: %v", err)
+			return
+		}
+	}
+	writer.Header().Set(
+		"Content-Disposition", fmt.Sprintf("attachment; filename=%s", vars["log"]))
+	writer.Header().Set("Content-Type", "text/plain")
+
+	_, err = writer.Write(data)
+	if err != nil {
+		log.Errorf("sending logs: %v", err)
+		return
+	}
+
 	for {
 		data, err := reader.ReadNext()
 		if err != nil {
 			if err == io.EOF {
 				break
 			}
-			writer.WriteHeader(http.StatusInternalServerError)
 			log.Errorf("error fetching logs: %v", err)
+			return
 		}
 		_, err = writer.Write(data)
 		if err != nil {
-			writer.WriteHeader(http.StatusInternalServerError)
 			log.Errorf("sending logs: %v", err)
+			return
 		}
 	}
 	return
