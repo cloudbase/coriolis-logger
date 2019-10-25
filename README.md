@@ -15,7 +15,7 @@ Conceivably this app can be used with any application that logs to Syslog, and d
 Clone the repo:
 
 ```bash
-git clone https://github.com/gabriel-samfira/coriolis-logger
+git clone https://github.com/cloudbase/coriolis-logger
 ```
 
 Build the binary:
