@@ -19,7 +19,9 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"net/http"
+	"os"
 	"strconv"
 	"time"
 
@@ -134,6 +136,103 @@ func timestampToTime(stamp string) (time.Time, error) {
 	return tm, nil
 }
 
+// downloadAsFile prepares a log for download by creating a temporary file
+// to which it dumps the log, then serves it as a plain file to the client.
+// This is done because some browsers like Safari have issues with
+// chunked downloads. This is a workaround that should be removed at a later
+// time.
+func (l *LogHandlers) downloadAsFile(reader common.Reader, writer http.ResponseWriter, logName string) {
+	tmpfile, err := ioutil.TempFile("", "coriolis-logger")
+	if err != nil {
+		writer.WriteHeader(http.StatusInternalServerError)
+		log.Errorf("error creating temp file: %v", err)
+		return
+	}
+
+	defer func() {
+		tmpfile.Close()
+		os.Remove(tmpfile.Name())
+	}()
+
+	for {
+		data, err := reader.ReadNext()
+		if err != nil {
+			if err == io.EOF {
+				break
+			}
+			writer.WriteHeader(http.StatusInternalServerError)
+			log.Errorf("error reading log: %v", err)
+			return
+		}
+		_, err = tmpfile.Write(data)
+		if err != nil {
+			writer.WriteHeader(http.StatusInternalServerError)
+			log.Errorf("error writing to temp file: %v", err)
+			return
+		}
+	}
+
+	logStat, err := tmpfile.Stat()
+	if err != nil {
+		writer.WriteHeader(http.StatusInternalServerError)
+		log.Errorf("error getting log info: %v", err)
+		return
+	}
+
+	if _, err := tmpfile.Seek(0, 0); err != nil {
+		writer.WriteHeader(http.StatusInternalServerError)
+		log.Errorf("error seeking log: %v", err)
+		return
+	}
+
+	size := strconv.FormatInt(logStat.Size(), 10)
+	writer.Header().Set("Content-Disposition", "attachment; filename="+logName)
+	writer.Header().Set("Content-Type", "text/plain")
+	writer.Header().Set("Content-Length", size)
+
+	if _, err := io.Copy(writer, tmpfile); err != nil {
+		log.Errorf("error sending file: %v", err)
+		return
+	}
+	return
+}
+
+func (l *LogHandlers) downloadAsChuks(reader common.Reader, writer http.ResponseWriter, logName string) {
+	data, err := reader.ReadNext()
+	if err != nil {
+		if err != io.EOF {
+			writer.WriteHeader(http.StatusInternalServerError)
+			log.Errorf("error fetching logs: %v", err)
+			return
+		}
+	}
+	writer.Header().Set("Content-Disposition", "attachment; filename="+logName)
+	writer.Header().Set("Content-Type", "text/plain")
+
+	_, err = writer.Write(data)
+	if err != nil {
+		log.Errorf("sending logs: %v", err)
+		return
+	}
+
+	for {
+		data, err := reader.ReadNext()
+		if err != nil {
+			if err == io.EOF {
+				break
+			}
+			log.Errorf("error fetching logs: %v", err)
+			return
+		}
+		_, err = writer.Write(data)
+		if err != nil {
+			log.Errorf("sending logs: %v", err)
+			return
+		}
+	}
+	return
+}
+
 func (l *LogHandlers) DownloadLogHandler(writer http.ResponseWriter, req *http.Request) {
 	ctx := req.Context()
 	if !canAccess(ctx) {
@@ -141,6 +240,9 @@ func (l *LogHandlers) DownloadLogHandler(writer http.ResponseWriter, req *http.R
 		writer.Write([]byte("you need admin level access to view logs"))
 		return
 	}
+	disableChunked := req.URL.Query().Get("disable_chunked")
+	disableChunkedAsBool, _ := strconv.ParseBool(disableChunked)
+
 	vars := mux.Vars(req)
 	severityStr := req.URL.Query().Get("severity")
 	severity, err := getSeverity(severityStr)
@@ -173,39 +275,11 @@ func (l *LogHandlers) DownloadLogHandler(writer http.ResponseWriter, req *http.R
 	}
 
 	reader := l.store.ResultReader(queryParams)
-	data, err := reader.ReadNext()
-	if err != nil {
-		if err != io.EOF {
-			writer.WriteHeader(http.StatusInternalServerError)
-			log.Errorf("error fetching logs: %v", err)
-			return
-		}
-	}
-	writer.Header().Set(
-		"Content-Disposition", fmt.Sprintf("attachment; filename=%s", vars["log"]))
-	writer.Header().Set("Content-Type", "text/plain")
-
-	_, err = writer.Write(data)
-	if err != nil {
-		log.Errorf("sending logs: %v", err)
+	if disableChunkedAsBool {
+		l.downloadAsFile(reader, writer, vars["log"])
 		return
 	}
-
-	for {
-		data, err := reader.ReadNext()
-		if err != nil {
-			if err == io.EOF {
-				break
-			}
-			log.Errorf("error fetching logs: %v", err)
-			return
-		}
-		_, err = writer.Write(data)
-		if err != nil {
-			log.Errorf("sending logs: %v", err)
-			return
-		}
-	}
+	l.downloadAsChuks(reader, writer, vars["log"])
 	return
 }
 
