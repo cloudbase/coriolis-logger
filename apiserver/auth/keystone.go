@@ -16,6 +16,7 @@ package auth
 
 import (
 	"context"
+	"coriolis-logger/config"
 	"fmt"
 	"net/http"
 
@@ -30,7 +31,13 @@ type keystoneAuth struct {
 func (k keystoneAuth) Authenticate(req *http.Request) (context.Context, error) {
 	authToken := req.Header.Get("X-Auth-Token")
 	if authToken == "" {
-		return nil, fmt.Errorf("missing token in headers")
+		authType := req.URL.Query().Get("auth_type")
+		if authType == config.AuthenticationKeystone {
+			authToken = req.URL.Query().Get("auth_token")
+		}
+		if authToken == "" {
+			return nil, fmt.Errorf("missing token in headers")
+		}
 	}
 
 	keystoneContext, err := k.auth.Validate(authToken)
