@@ -134,6 +134,7 @@ type APIServer struct {
 	AuthMiddleware string        `toml:"auth_middleware"`
 	TLSConfig      TLSConfig     `toml:"tls"`
 	KeystoneAuth   *KeystoneAuth `toml:"keystone_auth"`
+	CORSOrigins    []string      `toml:"cors_origins"`
 }
 
 func (a *APIServer) Validate() error {

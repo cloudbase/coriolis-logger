@@ -27,6 +27,7 @@ import (
 	"coriolis-logger/config"
 	"coriolis-logger/datastore/common"
 	wsWriter "coriolis-logger/writers/websocket"
+
 	"github.com/pkg/errors"
 )
 
@@ -55,7 +56,7 @@ func (h *APIServer) Stop() error {
 }
 
 func GetAPIServer(cfg config.APIServer, hub *wsWriter.Hub, datastore common.DataStore) (*APIServer, error) {
-	logHandler := controllers.NewLogHandler(hub, datastore)
+	logHandler := controllers.NewLogHandler(hub, datastore, cfg)
 	router, err := routers.GetRouter(cfg, logHandler)
 	if err != nil {
 		return nil, errors.Wrap(err, "getting router")
