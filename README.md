@@ -107,7 +107,15 @@ datastore = "influxdb"
 
 ## Usage
 
-Depending on the authentication middleware used, additional headers may need to be set. 
+Depending on the authentication middleware used, additional headers may need to be set.
+
+Generally available query parameters:
+
+|    Name    | Type    | Optional | Description                                                                  |
+| ---------- | ------- | -------- | ---------------------------------------------------------------------------- |
+| auth_type  | string  |   true   | Authentication token type. Supported authentication methods are: keystone. This option must match the authentication middleware enabled in the config for coriolis-logger |
+| auth_token | string  |   true   | Authentication token/credentials for the selected auth_type. |
+
 
 ### List logs
 
@@ -118,13 +126,50 @@ GET /api/v1/logs/
 Example:
 
 ```bash
-$ curl -s -H "X-Auth-Token: <token_goes_here>" -X GET http://127.0.0.1:9998/api/v1/logs/ | python -m json.tool
+$ curl -s -H "X-Auth-Token: <token_goes_here>" -X GET http://127.0.0.1:9998/api/v1/logs/ | jq
 {
-    "logs": [
-        {
-            "log_name": "coriolis-worker"
-        }
-    ]
+  "logs": [
+    {
+      "log_name": "coriolis-api"
+    },
+    {
+      "log_name": "coriolis-conductor"
+    },
+    {
+      "log_name": "coriolis-dbsync"
+    },
+    {
+      "log_name": "coriolis-replica-cron"
+    },
+    {
+      "log_name": "coriolis-worker"
+    }
+  ]
+}
+```
+
+Alternatively, authentication method and authentication info can be specified in the GET query args:
+
+```bash
+curl -s -X GET "http://127.0.0.1:9998/api/v1/logs/?auth_type=keystone&auth_token=super_secret_token" | jq
+{
+  "logs": [
+    {
+      "log_name": "coriolis-api"
+    },
+    {
+      "log_name": "coriolis-conductor"
+    },
+    {
+      "log_name": "coriolis-dbsync"
+    },
+    {
+      "log_name": "coriolis-replica-cron"
+    },
+    {
+      "log_name": "coriolis-worker"
+    }
+  ]
 }
 ```
 
@@ -136,10 +181,11 @@ GET /api/v1/logs/{log_name}/
 
 Query parameters:
 
-|    Name    | Type | Optional | Description                                                                  |
-| ---------- | ---- | -------- | ---------------------------------------------------------------------------- |
-| start_date | int  |   true   | Unix timestamp indicating the start date from which we want to download logs |
-| end_date   | int  |   true   | Unix timestamp indicating the end date to which we want to download logs     |
+|      Name       | Type | Optional | Description                                                                  |
+| --------------- | ---- | -------- | ---------------------------------------------------------------------------- |
+|   start_date    | int  |   true   | Unix timestamp indicating the start date from which we want to download logs |
+|    end_date     | int  |   true   | Unix timestamp indicating the end date to which we want to download logs     |
+| disable_chunked | bool |   true   | If true, coriolis-logger will attempt to disable chunked transfer.           |
 
 ### Stream logs using web sockets
 
