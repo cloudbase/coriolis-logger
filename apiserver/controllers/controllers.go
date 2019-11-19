@@ -212,7 +212,7 @@ func (l *LogHandlers) downloadAsFile(reader common.Reader, writer http.ResponseW
 	}
 
 	size := strconv.FormatInt(logStat.Size(), 10)
-	writer.Header().Set("Content-Disposition", "attachment; filename="+logName)
+	writer.Header().Set("Content-Disposition", "attachment; filename="+logName+".log")
 	writer.Header().Set("Content-Type", "text/plain")
 	writer.Header().Set("Content-Length", size)
 
@@ -232,7 +232,7 @@ func (l *LogHandlers) downloadAsChuks(reader common.Reader, writer http.Response
 			return
 		}
 	}
-	writer.Header().Set("Content-Disposition", "attachment; filename="+logName)
+	writer.Header().Set("Content-Disposition", "attachment; filename="+logName+".log")
 	writer.Header().Set("Content-Type", "text/plain")
 
 	_, err = writer.Write(data)
