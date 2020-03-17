@@ -19,6 +19,7 @@ cors_origins = ["*"]
     [apiserver.keystone_auth]
     # The keystone auth URI
     auth_uri = "http://127.0.0.1:5000/v3"
+    admin_roles = ["admin", "Admin"]
 
     # API server TLS config
     [apiserver.tls]

@@ -115,7 +115,8 @@ func (t *TLSConfig) Validate() error {
 }
 
 type KeystoneAuth struct {
-	AuthURI string `toml:"auth_uri"`
+	AuthURI    string   `toml:"auth_uri"`
+	AdminRoles []string `toml:"admin_roles"`
 }
 
 func (k *KeystoneAuth) Validate() error {

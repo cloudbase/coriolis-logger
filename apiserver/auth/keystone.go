@@ -26,6 +26,19 @@ import (
 
 type keystoneAuth struct {
 	auth *keystone.Auth
+	cfg  *config.KeystoneAuth
+}
+
+func (k keystoneAuth) rolesAsMap() map[string]bool {
+	ret := map[string]bool{}
+	if k.cfg == nil {
+		return ret
+	}
+
+	for _, val := range k.cfg.AdminRoles {
+		ret[val] = true
+	}
+	return ret
 }
 
 func (k keystoneAuth) Authenticate(req *http.Request) (context.Context, error) {
@@ -45,9 +58,10 @@ func (k keystoneAuth) Authenticate(req *http.Request) (context.Context, error) {
 		return nil, errors.Wrap(err, "authenticating token")
 	}
 
+	roles := k.rolesAsMap()
 	var isAdmin bool
 	for _, val := range keystoneContext.Roles {
-		if val.Name == "admin" {
+		if _, ok := roles[val.Name]; ok {
 			isAdmin = true
 			break
 		}
