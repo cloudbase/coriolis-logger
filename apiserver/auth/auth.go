@@ -19,14 +19,14 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/databus23/keystone"
 	"coriolis-logger/config"
+
+	"github.com/databus23/keystone"
 	"github.com/juju/loggo"
 	"github.com/pkg/errors"
 )
 
 const (
-	adminRoleName  = "admin"
 	AuthDetailsKey = "auth_details"
 )
 
@@ -60,6 +60,7 @@ func getKeystoneAuthenticator(cfg *config.KeystoneAuth) (Authenticator, error) {
 	auth := keystone.New(cfg.AuthURI)
 	return keystoneAuth{
 		auth: auth,
+		cfg:  cfg,
 	}, nil
 }
 
