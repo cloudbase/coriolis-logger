@@ -1,17 +1,18 @@
 module coriolis-logger
 
-go 1.13
+go 1.22.5
 
 require (
-	github.com/BurntSushi/toml v0.3.1
+	github.com/BurntSushi/toml v1.4.0
 	github.com/databus23/keystone v0.0.0-20180111110916-350fd0e663cd
-	github.com/google/uuid v1.1.1
-	github.com/gophercloud/gophercloud v0.6.0 // indirect
-	github.com/gorilla/handlers v1.4.2
-	github.com/gorilla/mux v1.7.3
-	github.com/gorilla/websocket v1.4.1
-	github.com/influxdata/influxdb1-client v0.0.0-20190809212627-fc22c7df067e
-	github.com/juju/loggo v0.0.0-20190526231331-6e530bcce5d8
-	github.com/pkg/errors v0.8.1
+	github.com/google/uuid v1.6.0
+	github.com/gorilla/handlers v1.5.2
+	github.com/gorilla/mux v1.8.1
+	github.com/gorilla/websocket v1.5.3
+	github.com/influxdata/influxdb1-client v0.0.0-20220302092344-a9ab5670611c
+	github.com/juju/loggo v1.0.0
+	github.com/pkg/errors v0.9.1
 	gopkg.in/mcuadros/go-syslog.v2 v2.3.0
 )
+
+require github.com/felixge/httpsnoop v1.0.4 // indirect

@@ -32,14 +32,21 @@ import (
 )
 
 type APIServer struct {
-	listener net.Listener
-	srv      *http.Server
+	listener  net.Listener
+	srv       *http.Server
+	apiServer config.APIServer
 }
 
 func (h *APIServer) Start() error {
 	go func() {
-		if err := h.srv.Serve(h.listener); err != nil {
-			log.Fatal(err)
+		if h.apiServer.UseTLS {
+			if err := h.srv.ServeTLS(h.listener, h.apiServer.TLSConfig.CRT, h.apiServer.TLSConfig.Key); err != nil {
+				log.Fatal(err)
+			}
+		} else {
+			if err := h.srv.Serve(h.listener); err != nil {
+				log.Fatal(err)
+			}
 		}
 	}()
 	return nil
@@ -65,18 +72,17 @@ func GetAPIServer(cfg config.APIServer, hub *wsWriter.Hub, datastore common.Data
 		Handler: router,
 	}
 	if cfg.UseTLS {
-		tlsCfg, err := cfg.TLSConfig.TLSConfig()
-		if err != nil {
-			return nil, errors.Wrap(err, "getting TLS config")
+		if err := cfg.TLSConfig.Validate(); err != nil {
+			return nil, errors.Wrap(err, "validating TLS config")
 		}
-		srv.TLSConfig = tlsCfg
 	}
 	listener, err := net.Listen("tcp", fmt.Sprintf("%s:%d", cfg.Bind, cfg.Port))
 	if err != nil {
 		return nil, err
 	}
 	return &APIServer{
-		srv:      srv,
-		listener: listener,
+		srv:       srv,
+		listener:  listener,
+		apiServer: cfg,
 	}, nil
 }
