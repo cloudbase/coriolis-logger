@@ -83,12 +83,17 @@ func (h *Hub) run() {
 					continue
 				}
 				msg := client.SyslogMessageToLogMessage(message)
-				select {
-				case client.send <- msg:
-				case <-time.After(5 * time.Second):
-					close(client.send)
-					delete(h.clients, id)
-				}
+				go func(msg LogMessage) {
+					timer := time.NewTimer(time.Duration(5) * time.Second)
+					defer timer.Stop()
+
+					select {
+					case client.send <- msg:
+					case <-timer.C:
+						close(client.send)
+						delete(h.clients, id)
+					}
+				}(msg)
 			}
 		}
 	}
