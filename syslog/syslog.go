@@ -111,6 +111,13 @@ func (s *SyslogWorker) Start() error {
 		if err := s.server.ListenUnixgram(s.cfg.Address); err != nil {
 			return errors.Wrap(err, fmt.Sprintf("listening on unix socket %q", s.cfg.Address))
 		}
+		if _, err := os.Stat(s.cfg.Address); err != nil {
+			log.Warningf("cannot fetch info about %q: %q", s.cfg.Address, err)
+		} else {
+			if err := os.Chmod(s.cfg.Address, 0666); err != nil {
+				log.Warningf("cannot change permissions on %q: %q", s.cfg.Address, err)
+			}
+		}
 	case config.TCPListener:
 		if err := s.server.ListenTCP(s.cfg.Address); err != nil {
 			return errors.Wrap(err, fmt.Sprintf("listening on TCP %q", s.cfg.Address))
