@@ -15,11 +15,13 @@
 package websocket
 
 import (
+	"sync"
 	"time"
 
 	"github.com/google/uuid"
 
 	"coriolis-logger/logging"
+
 	"github.com/gorilla/websocket"
 	"github.com/juju/loggo"
 )
@@ -63,7 +65,8 @@ type Client struct {
 	// Buffered channel of outbound messages.
 	send chan LogMessage
 
-	hub *Hub
+	hub     *Hub
+	sendMux sync.Mutex
 }
 
 func (c *Client) Go() {
@@ -103,24 +106,42 @@ func (c *Client) clientWriter() {
 	for {
 		select {
 		case message, ok := <-c.send:
-			c.conn.SetWriteDeadline(time.Now().Add(writeWait))
 			if !ok {
 				// The hub closed the channel.
-				c.conn.WriteMessage(websocket.CloseMessage, []byte{})
+				c.WriteMessage(websocket.CloseMessage, []byte{})
 				return
 			}
 
-			if err := c.conn.WriteJSON(message); err != nil {
+			if err := c.WriteJSON(message); err != nil {
 				log.Errorf("error sending message: %v", err)
 				return
 			}
 		case <-ticker.C:
-			c.conn.SetWriteDeadline(time.Now().Add(writeWait))
-			if err := c.conn.WriteMessage(websocket.PingMessage, nil); err != nil {
+			if err := c.WriteMessage(websocket.PingMessage, nil); err != nil {
 				return
 			}
 		}
 	}
+}
+
+// WriteJSON wraps the websocket connection WriteJSON method with a mutex to
+// prevent multiple messages being sent over the same connection at the same time,
+// because this will cause a panic in the websocket package.
+func (c *Client) WriteJSON(v interface{}) error {
+	c.sendMux.Lock()
+	defer c.sendMux.Unlock()
+	c.conn.SetWriteDeadline(time.Now().Add(writeWait))
+	return c.conn.WriteJSON(v)
+}
+
+// WriteMessage wraps the websocket connection WriteMessage method with a mutex to
+// prevent multiple messages being sent over the same connection at the same time,
+// because this will cause a panic in the websocket package.
+func (c *Client) WriteMessage(messageType int, data []byte) error {
+	c.sendMux.Lock()
+	defer c.sendMux.Unlock()
+	c.conn.SetWriteDeadline(time.Now().Add(writeWait))
+	return c.conn.WriteMessage(messageType, data)
 }
 
 func (c *Client) ShouldSend(msg logging.LogMessage) bool {
