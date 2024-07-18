@@ -72,44 +72,26 @@ func NewConfig(cfgFile string) (*Config, error) {
 
 // TLSConfig is the API server TLS config
 type TLSConfig struct {
-	CRT    string
-	Key    string
-	CACert string
-}
-
-func (t *TLSConfig) TLSConfig() (*tls.Config, error) {
-	// TLS config not present.
-	if t.CRT == "" && t.Key == "" {
-		return nil, fmt.Errorf("missing crt or key")
-	}
-
-	var roots *x509.CertPool
-	if t.CACert != "" {
-		caCertPEM, err := ioutil.ReadFile(t.CACert)
-		if err != nil {
-			return nil, err
-		}
-		roots = x509.NewCertPool()
-		ok := roots.AppendCertsFromPEM(caCertPEM)
-		if !ok {
-			return nil, fmt.Errorf("failed to parse CA cert")
-		}
-	}
-
-	cert, err := tls.LoadX509KeyPair(t.CRT, t.Key)
-	if err != nil {
-		return nil, err
-	}
-	return &tls.Config{
-		Certificates: []tls.Certificate{cert},
-		ClientAuth:   tls.RequireAndVerifyClientCert,
-		ClientCAs:    roots,
-	}, nil
+	CRT string
+	Key string
 }
 
 func (t *TLSConfig) Validate() error {
-	if _, err := t.TLSConfig(); err != nil {
-		return err
+	if t.CRT == "" || t.Key == "" {
+		return fmt.Errorf("missing crt or key")
+	}
+
+	if _, err := os.Stat(t.CRT); err != nil {
+		return errors.Wrapf(err, "failed to access %s", t.CRT)
+	}
+
+	if _, err := os.Stat(t.Key); err != nil {
+		return errors.Wrapf(err, "failed to access %s", t.Key)
+	}
+
+	_, err := tls.LoadX509KeyPair(t.CRT, t.Key)
+	if err != nil {
+		return errors.Wrap(err, "loading X509 key pair")
 	}
 	return nil
 }
@@ -323,7 +305,7 @@ func (i *InfluxDB) TLSConfig() (*tls.Config, error) {
 }
 
 func (i *InfluxDB) Validate() error {
-	if i.URL.IsValid() == false {
+	if !i.URL.IsValid() {
 		return fmt.Errorf("invalid InfluxDB URL: %q", i.URL)
 	}
 	if i.Database == "" {

@@ -25,7 +25,6 @@ cors_origins = ["*"]
     [apiserver.tls]
     crt = "/tmp/certificate.pem"
     key = "/tmp/key.pem"
-    cacert = "/tmp/ca-cert.pem"
 
 [syslog]
 # Possible values: unixgram, tcp, udp
