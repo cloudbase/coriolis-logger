@@ -113,7 +113,7 @@ func (k *KeystoneAuth) Validate() error {
 type APIServer struct {
 	Bind           string
 	Port           int
-	UseTLS         bool
+	UseTLS         bool          `toml:"use_tls"`
 	AuthMiddleware string        `toml:"auth_middleware"`
 	TLSConfig      TLSConfig     `toml:"tls"`
 	KeystoneAuth   *KeystoneAuth `toml:"keystone_auth"`
