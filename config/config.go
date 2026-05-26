@@ -96,6 +96,28 @@ func (t *TLSConfig) Validate() error {
 	return nil
 }
 
+func (t TLSConfig) Config() *tls.Config {
+	return &tls.Config{
+		MinVersion: tls.VersionTLS12,
+
+		CurvePreferences: []tls.CurveID{
+			tls.X25519,
+			tls.CurveP256,
+		},
+
+		PreferServerCipherSuites: true,
+
+		CipherSuites: []uint16{
+			tls.TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384,
+			tls.TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384,
+			tls.TLS_ECDHE_ECDSA_WITH_CHACHA20_POLY1305,
+			tls.TLS_ECDHE_RSA_WITH_CHACHA20_POLY1305,
+			tls.TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256,
+			tls.TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256,
+		},
+	}
+}
+
 type KeystoneAuth struct {
 	AuthURI    string   `toml:"auth_uri"`
 	AdminRoles []string `toml:"admin_roles"`
@@ -274,7 +296,7 @@ func (i *InfluxDB) TLSConfig() (*tls.Config, error) {
 		return nil, nil
 	}
 
-	cfg := &tls.Config{}
+	cfg := TLSConfig{}.Config()
 
 	var roots *x509.CertPool
 	if i.CACert != "" {

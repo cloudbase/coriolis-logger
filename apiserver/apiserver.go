@@ -75,6 +75,7 @@ func GetAPIServer(cfg config.APIServer, hub *wsWriter.Hub, datastore common.Data
 		if err := cfg.TLSConfig.Validate(); err != nil {
 			return nil, errors.Wrap(err, "validating TLS config")
 		}
+		srv.TLSConfig = cfg.TLSConfig.Config()
 	}
 	listener, err := net.Listen("tcp", fmt.Sprintf("%s:%d", cfg.Bind, cfg.Port))
 	if err != nil {
