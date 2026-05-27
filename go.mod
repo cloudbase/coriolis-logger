@@ -1,6 +1,6 @@
 module coriolis-logger
 
-go 1.22.5
+go 1.26.3
 
 require (
 	github.com/BurntSushi/toml v1.4.0

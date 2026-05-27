@@ -163,7 +163,7 @@ func (a *APIServer) Validate() error {
 		}
 	}
 	if a.Port > 65535 || a.Port < 1 {
-		return fmt.Errorf("invalid port nr %q", a.Port)
+		return fmt.Errorf("invalid port nr %d", a.Port)
 	}
 	ip := net.ParseIP(a.Bind)
 	if ip == nil {

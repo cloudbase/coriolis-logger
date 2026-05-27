@@ -277,20 +277,20 @@ func (l *LogHandlers) DownloadLogHandler(writer http.ResponseWriter, req *http.R
 	}
 	if vars["log"] == "" {
 		writer.WriteHeader(http.StatusBadRequest)
-		fmt.Fprintf(writer, fmt.Sprintf("missing log name"))
+		fmt.Fprint(writer, "missing log name")
 	}
 	startDateStamp := req.URL.Query().Get("start_date")
 	startDate, err := timestampToTime(startDateStamp)
 	if err != nil {
 		writer.WriteHeader(http.StatusBadRequest)
-		fmt.Fprintf(writer, fmt.Sprintf("invalid start date: %q", startDateStamp))
+		fmt.Fprintf(writer, "invalid start date: %q", startDateStamp)
 	}
 
 	endDateStamp := req.URL.Query().Get("end_date")
 	endDate, err := timestampToTime(endDateStamp)
 	if err != nil {
 		writer.WriteHeader(http.StatusBadRequest)
-		fmt.Fprintf(writer, fmt.Sprintf("invalid end date: %q", endDateStamp))
+		fmt.Fprintf(writer, "invalid end date: %q", endDateStamp)
 	}
 
 	queryParams := params.QueryParams{
@@ -323,5 +323,5 @@ func (l *LogHandlers) ListLogsHandler(writer http.ResponseWriter, req *http.Requ
 		writer.WriteHeader(http.StatusInternalServerError)
 		log.Errorf("error listing logs: %v", err)
 	}
-	fmt.Fprintf(writer, string(js))
+	_, _ = writer.Write(js)
 }
