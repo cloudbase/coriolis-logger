@@ -176,12 +176,17 @@ func (a *APIServer) Validate() error {
 }
 
 type Syslog struct {
-	Listener    ListenerType
-	Address     string
-	Format      string
-	LogToStdout bool `toml:"log_to_stdout"`
-	DataStore   DatastoreType
-	InfluxDB    *InfluxDB `toml:"influxdb"`
+	Listener ListenerType
+	Address  string
+	// ExtraListener and ExtraAddress optionally start a second syslog
+	// endpoint on the same server. This allows a unix datagram socket
+	// to run alongside a TCP or UDP listener (or vice versa).
+	ExtraListener ListenerType `toml:"extra_listener"`
+	ExtraAddress  string       `toml:"extra_address"`
+	Format        string
+	LogToStdout   bool `toml:"log_to_stdout"`
+	DataStore     DatastoreType
+	InfluxDB      *InfluxDB `toml:"influxdb"`
 }
 
 func (s *Syslog) LogFormat() (format.Format, error) {
@@ -213,9 +218,29 @@ func (s *Syslog) Validate() error {
 		return fmt.Errorf("invalid datastore type %q", s.DataStore)
 	}
 
-	switch s.Listener {
+	if err := validateListener(s.Listener, s.Address); err != nil {
+		return err
+	}
+
+	if s.ExtraListener == "" && s.ExtraAddress == "" {
+		return nil
+	}
+	if s.ExtraListener == "" || s.ExtraAddress == "" {
+		return fmt.Errorf("extra_listener and extra_address must both be set")
+	}
+	if err := validateListener(s.ExtraListener, s.ExtraAddress); err != nil {
+		return errors.Wrap(err, "validating extra listener")
+	}
+	if s.Listener == s.ExtraListener && s.Address == s.ExtraAddress {
+		return fmt.Errorf("extra listener duplicates the primary listener")
+	}
+	return nil
+}
+
+func validateListener(listener ListenerType, address string) error {
+	switch listener {
 	case UnixDgramListener:
-		absPath, err := filepath.Abs(s.Address)
+		absPath, err := filepath.Abs(address)
 		if err != nil {
 			return errors.Wrap(err, "getting dirname")
 		}
@@ -224,15 +249,15 @@ func (s *Syslog) Validate() error {
 			return errors.Wrap(err, "fetching info about dirname")
 		}
 
-		if mode, err := os.Stat(s.Address); err == nil {
+		if mode, err := os.Stat(address); err == nil {
 			if mode.Mode()&os.ModeSocket == 0 {
 				return fmt.Errorf(
-					"cannot use %q as address. File already exists and is not socket", s.Address)
+					"cannot use %q as address. File already exists and is not socket", address)
 			}
 		}
 	case TCPListener, UDPListener:
 	default:
-		return fmt.Errorf("invalid listener type %q", s.Listener)
+		return fmt.Errorf("invalid listener type %q", listener)
 	}
 	return nil
 }
