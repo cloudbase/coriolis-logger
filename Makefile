@@ -1,3 +1,9 @@
+export GO111MODULE=on
+BUILD_DIR ?= bin
+BUILD_TAGS ?= osusergo,netgo,sqlite_omit_load_extension
+LDFLAGS ?= -extldflags '-static' -s -w
+PKG ?= ./cmd/coriolis-logger
+
 .PHONY: all
 all: build-release
 
@@ -9,7 +15,7 @@ fmt: ## Format the code.
 vet: ## Run static code analysis.
 	go vet ./...
 
-COVER_OUTDIR ?= bin
+COVER_OUTDIR ?= $(BUILD_DIR)
 COVER_OUTFILE_RAW ?= $(COVER_OUTDIR)/coverage.raw
 COVER_OUTFILE_HTML ?= $(COVER_OUTDIR)/coverage.html
 # Filter executed tests by the "TEST_RE" regex
@@ -44,35 +50,37 @@ build-dev: fmt vet ## Generate coriolis-logger dev build.
 	# Dev build, meant to build fast and run on the dev machine:
 	#   * use the host architecture
 	#   * avoid rebuilding unmodified components
-	mkdir -p bin
+	mkdir -p $(BUILD_DIR)
 	go build \
-		-o bin/coriolis-logger \
-		./cmd/coriolis-logger
+		-o $(BUILD_DIR)/coriolis-logger \
+		$(PKG)
 
 .PHONY: build-dev-dbg
 build-dev-dbg: fmt vet ## Generate coriolis-logger dev build, disabling compiler optimizations.
-	mkdir -p bin
+	mkdir -p $(BUILD_DIR)
 	go build -gcflags="all=-N -l" \
-		-o bin/coriolis-logger \
-		./cmd/coriolis-logger
+		-o $(BUILD_DIR)/coriolis-logger \
+		$(PKG)
 
 .PHONY: build-release
 build-release: fmt vet ## Generate coriolis-logger release build.
 	# Release build, meant to be deployed as the Coriolis logging service:
 	#   * strip debug symbols
 	#   * build for Linux x86_64
+	#   * statically linked
 	#   * rebuild everything
-	mkdir -p bin
+	mkdir -p $(BUILD_DIR)
 	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -a \
-		-ldflags="-w -s" \
-		-o bin/coriolis-logger \
-		./cmd/coriolis-logger
+		-tags "$(BUILD_TAGS)" \
+		-ldflags="$(LDFLAGS)" \
+		-o $(BUILD_DIR)/coriolis-logger \
+		$(PKG)
 
 CONFIG ?= testdata/config.toml
 
 .PHONY: run
 run: ## Run coriolis-logger.
-	bin/coriolis-logger -config "$(CONFIG)"
+	$(BUILD_DIR)/coriolis-logger -config "$(CONFIG)"
 
 # We'll reuse the "help" generator from operator-sdk (Apache-2).
 .DEFAULT_GOAL := help
