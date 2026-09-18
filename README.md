@@ -22,6 +22,14 @@ Build the binary:
 
 ```bash
 cd coriolis-logger
+make build-dev
+```
+
+This writes `bin/coriolis-logger`. Use `make build-release` for a Linux amd64 binary, and `make help` to list all targets.
+
+Alternatively:
+
+```bash
 go install ./...
 ```
 
