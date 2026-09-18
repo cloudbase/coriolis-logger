@@ -106,25 +106,12 @@ func (s *SyslogWorker) Start() error {
 		return errors.Wrap(err, "removing socket")
 	}
 
-	switch s.cfg.Listener {
-	case config.UnixDgramListener:
-		if err := s.server.ListenUnixgram(s.cfg.Address); err != nil {
-			return errors.Wrap(err, fmt.Sprintf("listening on unix socket %q", s.cfg.Address))
-		}
-		if _, err := os.Stat(s.cfg.Address); err != nil {
-			log.Warningf("cannot fetch info about %q: %q", s.cfg.Address, err)
-		} else {
-			if err := os.Chmod(s.cfg.Address, 0666); err != nil {
-				log.Warningf("cannot change permissions on %q: %q", s.cfg.Address, err)
-			}
-		}
-	case config.TCPListener:
-		if err := s.server.ListenTCP(s.cfg.Address); err != nil {
-			return errors.Wrap(err, fmt.Sprintf("listening on TCP %q", s.cfg.Address))
-		}
-	case config.UDPListener:
-		if err := s.server.ListenUDP(s.cfg.Address); err != nil {
-			return errors.Wrap(err, fmt.Sprintf("listening on UDP %q", s.cfg.Address))
+	if err := s.listen(s.cfg.Listener, s.cfg.Address); err != nil {
+		return err
+	}
+	if s.cfg.ExtraListener != "" {
+		if err := s.listen(s.cfg.ExtraListener, s.cfg.ExtraAddress); err != nil {
+			return err
 		}
 	}
 
@@ -136,15 +123,52 @@ func (s *SyslogWorker) Start() error {
 	return nil
 }
 
-func (s *SyslogWorker) cleanStaleSocket() error {
-	if s.cfg.Listener != config.UnixDgramListener {
-		return nil
+func (s *SyslogWorker) listen(listener config.ListenerType, address string) error {
+	switch listener {
+	case config.UnixDgramListener:
+		if err := s.server.ListenUnixgram(address); err != nil {
+			return errors.Wrap(err, fmt.Sprintf("listening on unix socket %q", address))
+		}
+		if _, err := os.Stat(address); err != nil {
+			log.Warningf("cannot fetch info about %q: %q", address, err)
+		} else {
+			if err := os.Chmod(address, 0666); err != nil {
+				log.Warningf("cannot change permissions on %q: %q", address, err)
+			}
+		}
+	case config.TCPListener:
+		if err := s.server.ListenTCP(address); err != nil {
+			return errors.Wrap(err, fmt.Sprintf("listening on TCP %q", address))
+		}
+	case config.UDPListener:
+		if err := s.server.ListenUDP(address); err != nil {
+			return errors.Wrap(err, fmt.Sprintf("listening on UDP %q", address))
+		}
+	default:
+		return fmt.Errorf("invalid listener type %q", listener)
 	}
-	if mode, err := os.Stat(s.cfg.Address); err == nil {
-		if mode.Mode()&os.ModeSocket != 0 {
-			log.Infof("removing unix socket %q", s.cfg.Address)
-			if err := os.Remove(s.cfg.Address); err != nil {
-				return errors.Wrap(err, "removing unix socket")
+	return nil
+}
+
+func (s *SyslogWorker) unixAddresses() []string {
+	var addrs []string
+	if s.cfg.Listener == config.UnixDgramListener {
+		addrs = append(addrs, s.cfg.Address)
+	}
+	if s.cfg.ExtraListener == config.UnixDgramListener {
+		addrs = append(addrs, s.cfg.ExtraAddress)
+	}
+	return addrs
+}
+
+func (s *SyslogWorker) cleanStaleSocket() error {
+	for _, addr := range s.unixAddresses() {
+		if mode, err := os.Stat(addr); err == nil {
+			if mode.Mode()&os.ModeSocket != 0 {
+				log.Infof("removing unix socket %q", addr)
+				if err := os.Remove(addr); err != nil {
+					return errors.Wrap(err, "removing unix socket")
+				}
 			}
 		}
 	}

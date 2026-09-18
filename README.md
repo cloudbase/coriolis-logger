@@ -63,6 +63,12 @@ listener = "unixgram"
 # address = "/tmp/coriolis-logger/syslog"
 address = "/tmp/coriolis-logging.sock"
 
+# Optional second listener. The syslog server can bind a unix
+# datagram socket and a TCP or UDP endpoint at the same time.
+# extra_listener and extra_address must both be set when used.
+# extra_listener = "tcp"
+# extra_address = "0.0.0.0:5144"
+
 # Log format
 # possible values:
 #   rfc3164
